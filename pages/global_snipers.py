@@ -91,7 +91,7 @@ st.markdown("""
     .stApp {
         width: 100vw;
         box-sizing: border-box;
-        background: radial-gradient(circle, rgba(205, 193, 255, 1) 0%, rgba(255, 204, 234, 1) 100%);
+        background: radial-gradient(circle, rgba(127, 161, 195, 1) 0%, rgba(100, 130, 173, 1) 100%);
     }
     .glass-kpi {
         background: rgba(255, 255, 255, 0.12);
@@ -460,7 +460,7 @@ with header_right:
                 max_value=max_date.date()
             )
 
-        s4, s5 = st.columns(1,5)
+        s4, s5 = st.columns([1,5])
         with s4:
             st.write("RANGE : ")
         with s5:
