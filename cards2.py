@@ -192,14 +192,23 @@ token_collection = [
 # Extract token symbols from your token_collection
 collection_to_symbol = {}
 for col in token_collection:
-    try:
-        doc = db[col].find_one({}, {"token_symbol": 1})
-        if doc and "token_symbol" in doc:
-            collection_to_symbol[col] = doc["token_symbol"]
-    except:
-        continue
+    doc = db[col].find_one({}, {"token_symbol": 1})
+    if doc and "token_symbol" in doc:
+        collection_to_symbol[col] = doc["token_symbol"]
 
 filtered_tokens = list(collection_to_symbol.values())
+
+# Fetch all docs once
+all_docs = list(db["swap_progress"].find({}))
+
+# Sorting logic
+reverse_order = sort_order == "Descending"
+if sort_option == "Launch Time":
+    filtered_tokens = sorted(filtered_tokens, key=lambda t: next(
+        (d.get("updated_at") for d in all_docs if d.get("token_symbol") == t), datetime.min
+    ), reverse=reverse_order)
+else:
+    filtered_tokens = sorted(filtered_tokens, key=lambda t: t.lower(), reverse=reverse_order)
 
 def render_token_cards_from_docs(token_list, all_docs, num_cols=5):
     doc_map = {d["token_symbol"]: d for d in all_docs}
