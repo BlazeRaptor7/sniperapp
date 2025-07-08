@@ -235,30 +235,6 @@ end_date = end_date or today
 all_docs = list(db["swap_progress"].find({}))
 filtered_tokens = []
 
-"""for doc in all_docs:
-    symbol = doc.get("token_symbol", "").lower()
-    address = doc.get("token_address", "").lower()
-    updated_at = doc.get("updated_at")
-
-    # Parse date safely
-    try:
-        if isinstance(updated_at, dict) and "$date" in updated_at:
-            ts = datetime.fromisoformat(updated_at["$date"].replace("Z", "+00:00"))
-        elif isinstance(updated_at, datetime):
-            ts = updated_at
-        else:
-            continue
-    except:
-        continue
-
-    # Filter logic
-    if search_query and search_query not in symbol and search_query not in address:
-        continue
-    if not (start_date <= ts.date() <= end_date):
-        continue
-
-    filtered_tokens.append(doc["token_symbol"])"""
-
 # 3. Sort tokens by launch time descending
 # 3. Sort tokens based on user choice
 reverse_order = sort_order == "Descending"
