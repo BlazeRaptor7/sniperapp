@@ -624,8 +624,15 @@ with tab2:
         st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
 
     # KPIs
+    filtered_df = pnl_df.copy().reset_index(drop=True)
+
+    # Ensure numeric version is available for filtering
+    filtered_df['Net PnL ($)'] = pd.to_numeric(filtered_df['Net PnL ($)'], errors='coerce')
+
+    successful_snipers = filtered_df[filtered_df['Net PnL ($)'] > 0]
     num_unique_snipers = filtered_df['Wallet Address'].nunique()
     success_rate = (len(successful_snipers) / num_unique_snipers * 100) if num_unique_snipers > 0 else 0
+
 
 
     total_realized_pnl = filtered_df['Net PnL ($)'].sum()
