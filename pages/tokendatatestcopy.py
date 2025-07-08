@@ -574,10 +574,10 @@ with tab2:
         token_launch_blocks = load_launch_blocks()
         potential_sniper_df, combined_df = process_sniper_data(combined_df, token_launch_blocks)
         
-        pnl_df = calculate_pnl(potential_sniper_df, combined_df)
-        if pnl_df.empty:
-            st.markdown("### ❌ No Snipers Detected")
-            st.stop()
+    pnl_df = calculate_pnl(potential_sniper_df, combined_df)
+    if pnl_df.empty:
+        st.markdown("### ❌ No Snipers Detected")
+        st.stop()
     #-----------------------------------------------------------------------------------------------------------------------------
     # Streamlit UI
     st.title(f"Potential Snipers – PnL Overview for {token_upper}")
