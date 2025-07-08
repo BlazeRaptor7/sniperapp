@@ -119,6 +119,7 @@ scrollable_style = """
     .scrollable {
         max-height: 400px;
         overflow-y: auto;
+        position: relative;
         overflow-x: auto;
         width: 78vw;
         box-sizing: border-box;
@@ -140,6 +141,7 @@ scrollable_style = """
         text-align: center;
         border-collapse: separate;
         border-spacing: 0;
+        border: 1px solid transparent; 
     }
     
     /* Table headers and cells */
@@ -150,12 +152,13 @@ scrollable_style = """
         font-size: 15px;
         color: #fff;
         font-weight: 300;
+        border: 1px solid transparent;
     }
     
     /* Header styling */
     .scrollable th {
         background: rgba(70, 70, 70, 0.8);
-        position: sticky;
+        position: sticky; top:0;
         color: #fff;
         text-transform: uppercase;
         font-weight: 400;

@@ -460,7 +460,7 @@ with header_right:
                 max_value=max_date.date()
             )
 
-        s4 = st.columns(1)
+        s4 = st.columns()
         with s4:
             min_pnl = float(pnl_df["Net PnL"].min())
             max_pnl = float(pnl_df["Net PnL"].max())
