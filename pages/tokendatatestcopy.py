@@ -366,6 +366,8 @@ with tab1:
     with st.container():
         st.markdown(scrollable_style, unsafe_allow_html=True)
         st.markdown(f"<div class='scrollable'>{html_table}</div>", unsafe_allow_html=True)
+
+
 with tab2:
 
     # ───── Token from Query Params ─────
@@ -585,7 +587,7 @@ with tab2:
     filtered_df["Wallet Address"] = filtered_df["Wallet Address"].apply(
         lambda addr: f"<span title='{addr}'>{addr[:5]}...{addr[-5:]}</span>" if isinstance(addr, str) else addr
     )
-    filtered_df["Net PnL ($)"] = filtered_df["Net PnL ($)"].apply(
+    filtered_df["Net PnL ($)_styled"] = filtered_df["Net PnL ($)"].apply(
         lambda x: f"<span style='color: {'green' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>"
     )
     # Sort by Net PnL descending
@@ -599,7 +601,10 @@ with tab2:
     successful_snipers = filtered_df[filtered_df['Net PnL ($)'] > 0]
 
     # Render HTML table
-    html_table_sniper = filtered_df.to_html(escape=False, index=False, float_format="%.4f")
+    html_table_sniper = filtered_df.drop(columns=["Net PnL ($)"]).rename(
+        columns={"Net PnL ($)_styled": "Net PnL ($)"}
+    ).to_html(escape=False, index=False)
+
     st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
 
     # KPIs
