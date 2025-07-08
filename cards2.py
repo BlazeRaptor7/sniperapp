@@ -62,7 +62,7 @@ html, body {
 }
 .card {
     backdrop-filter: blur(12px);
-    background: rgba(255, 255, 255, 0.25);
+    background: radial-gradient(circle, rgba(127, 161, 195, 1) 0%, rgba(122, 178, 211, 1) 100%);
     padding: 16px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);

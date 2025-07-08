@@ -43,7 +43,7 @@ st.markdown("""
     .stApp {
         width: 100vw;
         box-sizing: border-box;
-        background: radial-gradient(circle, rgba(158, 198, 243, 1) 0%, rgba(189, 221, 228, 1) 100%);
+        background: radial-gradient(circle, rgba(127, 161, 195, 1) 0%, rgba(100, 130, 173, 1) 100%);
     }
     .glass-kpi {
         background: rgba(255, 255, 255, 0.12);
