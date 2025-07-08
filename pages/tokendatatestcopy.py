@@ -615,6 +615,8 @@ with tab2:
         "Total Tax Paid",
         "Total Tx Fees Paid (ETH)"
     ]
+    print("Filtered DF columns:", filtered_df.columns.tolist())
+    print("Ordered cols:", ordered_cols)
 
     # Rename for display and render
     html_table_sniper = (
