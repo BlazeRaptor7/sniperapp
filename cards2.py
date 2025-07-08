@@ -183,23 +183,24 @@ def shorten(addr):
         return addr[:6] + "..." + addr[-4:]
     return addr
 
+# Fetch all docs once
+all_docs = list(db["swap_progress"].find({}))
+# Correct filtering from swap_progress using token_collection
 token_collection = [
     'jarvis_swap', 'afath_swap', 'pilot_swap', 'tian_swap', 'vgn_swap', 'badai_swap',
     'bolz_swap', 'trivi_swap', 'vruff_swap', 'wbug_swap', 'aispace_swap', 'wint_swap', 
     'ling_swap', 'gloria_swap', 'light_swap', 'rwai_swap', 'nyko_swap', 'super_swap',
     'xllm2_swap', 'maneki_swap', 'whim_swap'
 ]
-# Extract token symbols from your token_collection
-collection_to_symbol = {}
-for col in token_collection:
-    doc = db[col].find_one({}, {"token_symbol": 1})
-    if doc and "token_symbol" in doc:
-        collection_to_symbol[col] = doc["token_symbol"]
 
-filtered_tokens = list(collection_to_symbol.values())
+# Normalize to lowercase for matching
+allowed_symbols = {col.replace("_swap", "").lower() for col in token_collection}
+
+filtered_tokens = [doc["token_symbol"]
+                   for doc in all_docs
+                   if doc.get("token_symbol", "").lower() in allowed_symbols]
 st.write("Filtered tokens:", filtered_tokens)
-# Fetch all docs once
-all_docs = list(db["swap_progress"].find({}))
+
 st.write("Docs in swap_progress:", len(all_docs))
 
 # Sorting logic
@@ -258,20 +259,6 @@ today = datetime.now().date()
 default_start = date(2024, 1, 1)
 start_date = start_date or default_start
 end_date = end_date or today
-
-# 2. Fetch all token docs
-all_docs = list(db["swap_progress"].find({}))
-
-# 3. Sort tokens by launch time descending
-# 3. Sort tokens based on user choice
-reverse_order = sort_order == "Descending"
-
-if sort_option == "Launch Time":
-    filtered_tokens = sorted(filtered_tokens, key=lambda t: next(
-        (d.get("updated_at") for d in all_docs if d.get("token_symbol") == t), datetime.min
-    ), reverse=reverse_order)
-else:  # Sort by Name
-    filtered_tokens = sorted(filtered_tokens, key=lambda t: t.lower(), reverse=reverse_order)
 # Use predefined list of 21 tokens
 st.write("Rendering cards for tokens:", filtered_tokens)
 render_token_cards_from_docs(filtered_tokens, all_docs)
