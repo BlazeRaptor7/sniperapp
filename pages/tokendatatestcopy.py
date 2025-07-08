@@ -584,26 +584,18 @@ with tab2:
     # Create filtered_df and add S.No once, cleanly
     filtered_df = pnl_df.copy().reset_index(drop=True)
     #filtered_df["S.No"] = range(1, len(filtered_df) + 1)
+    # Ensure correct renaming & styling
     filtered_df["Wallet Display"] = filtered_df["Wallet Address"].apply(
         lambda addr: f"<span title='{addr}'>{addr[:5]}...{addr[-5:]}</span>" if isinstance(addr, str) else addr
     )
-
     filtered_df["Net PnL ($)_styled"] = filtered_df["Net PnL ($)"].apply(
-        lambda x: f"<span style='color: {'#74fe64' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>"
+        lambda x: f"<span style='color: {'#74fe64' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>" if pd.notnull(x) else ""
     )
-    # Sort by Net PnL descending
-    filtered_df = filtered_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
-    #filtered_df["S.No"] = range(1, len(filtered_df) + 1)
-    #st.dataframe(filtered_df, hide_index=True)
-    # Convert column to numeric
-    filtered_df['Net PnL ($)'] = pd.to_numeric(filtered_df['Net PnL ($)'], errors='coerce')
 
-    # Get successful snipers
-    successful_snipers = filtered_df[filtered_df['Net PnL ($)'] > 0]
-    # Columns in desired order
+    # Now define ordered_cols safely
     ordered_cols = [
-        "Wallet Display",           # styled version
-        "Net PnL ($)_styled",       # styled version
+        "Wallet Display",
+        "Net PnL ($)_styled",
         "Unrealized PnL ($)",
         "Remaining Tokens",
         "Txn Count (BUY)",
@@ -615,19 +607,21 @@ with tab2:
         "Total Tax Paid",
         "Total Tx Fees Paid (ETH)"
     ]
-    print("Filtered DF columns:", filtered_df.columns.tolist())
-    print("Ordered cols:", ordered_cols)
 
-    # Rename for display and render
-    html_table_sniper = (
-        filtered_df[ordered_cols]
-        .rename(columns={
-            "Wallet Display": "Wallet Address",
-            "Net PnL ($)_styled": "Net PnL ($)"
-        })
-        .to_html(escape=False, index=False)
-    )
-    st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
+    # Validate column presence before rendering
+    missing_cols = [col for col in ordered_cols if col not in filtered_df.columns]
+    if missing_cols:
+        st.error(f"Missing columns: {missing_cols}")
+    else:
+        html_table_sniper = (
+            filtered_df[ordered_cols]
+            .rename(columns={
+                "Wallet Display": "Wallet Address",
+                "Net PnL ($)_styled": "Net PnL ($)"
+            })
+            .to_html(escape=False, index=False)
+        )
+        st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
 
     # KPIs
     num_unique_snipers = filtered_df['Wallet Address'].nunique()
