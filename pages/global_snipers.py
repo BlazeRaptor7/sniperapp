@@ -431,7 +431,7 @@ with st.sidebar:
             """,
             unsafe_allow_html=True
             )
-    st.header("🔍 Filters")
+    """st.header("🔍 Filters")
     token_filter = st.multiselect("Select Token(s):", options=sorted([t for t in pnl_df["Token"].unique() if t is not None]), default=[])
     wallet_search = st.text_input("Enter Wallet Address:", value="")
     # Date range filter for First Buy Time
@@ -453,9 +453,47 @@ with st.sidebar:
         value=(min_pnl, max_pnl),
         step=0.01
     )
-    st.markdown("---")
+    st.markdown("---")"""
 
+# Streamlit UI
+# Page Title
+st.markdown("<h1 style='color: white;'>Potential Snipers – PnL Overview</h1>", unsafe_allow_html=True)
 
+# Filter Popover Top-Right
+header_left, header_right = st.columns([6, 1])
+with header_right:
+    from datetime import date
+    with st.popover("FILTER SNIPERS", icon="🔽", use_container_width=True):
+        s1, s2 = st.columns(2)
+        with s1:
+            token_filter = st.multiselect(
+                "Select Token(s):",
+                options=sorted([t for t in pnl_df["Token"].unique() if t is not None]),
+                default=[]
+            )
+        with s2:
+            wallet_search = st.text_input("Enter Wallet Address:", value="")
+
+        s3, s4 = st.columns(2)
+        with s3:
+            min_date = pd.to_datetime(pnl_df["First Buy Time"]).min()
+            max_date = pd.to_datetime(pnl_df["First Buy Time"]).max()
+            date_range = st.date_input(
+                "Select First Buy Date Range:",
+                value=(min_date.date(), max_date.date()),
+                min_value=min_date.date(),
+                max_value=max_date.date()
+            )
+        with s4:
+            min_pnl = float(pnl_df["Net PnL"].min())
+            max_pnl = float(pnl_df["Net PnL"].max())
+            pnl_range = st.slider(
+                "Select Net PnL Range:",
+                min_value=min_pnl,
+                max_value=max_pnl,
+                value=(min_pnl, max_pnl),
+                step=0.01
+            )
 filtered_df = pnl_df.copy()
 filtered_df = filtered_df.reset_index(drop=True)
 filtered_df.insert(0, 'S.No', range(1, len(filtered_df) + 1))
@@ -479,9 +517,6 @@ filtered_df = filtered_df[(filtered_df["Net PnL"] >= pnl_range[0]) & (filtered_d
 # Show warning if sniper address filter yields zero rows
 if wallet_search and filtered_df.empty:
     st.warning("No snipers found matching the entered address.")
-
-# Streamlit UI
-st.title(f"Potential Snipers – PnL Overview")
 
 st.subheader("📊 Sniper Summary Table")
 

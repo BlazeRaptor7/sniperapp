@@ -132,7 +132,7 @@ scrollable_style = """
     .scrollable table {
         width: 100%;
         backdrop-filter: blur(10px);
-        background: rgba(255, 255, 255, 0.8);
+        background: rgba(255, 255, 255, 0.2);
         border-radius: 8px;
         box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
         margin: 0 auto 0 0;
@@ -154,6 +154,7 @@ scrollable_style = """
     /* Header styling */
     .scrollable th {
         background: rgba(70, 70, 70, 0.8);
+        position: sticky;
         color: #fff;
         text-transform: uppercase;
         font-weight: 400;
@@ -195,7 +196,11 @@ with cold:
         genesis_block = doc.get("genesis_block", "N/A")
 
         # We cannot get name, dao, or timestamp from swap_progress — we'll extract from first swap doc
-        token_collection = f"{token.lower()}_swap"
+        #token_collection = f"{token.lower()}_swap"
+        token_collection = ['jarvis_swap', 'afath_swap', 'pilot_swap', 'tian_swap', 'vgn_swap', 'badai_swap',
+                       'bolz_swap', 'trivi_swap', 'vruff_swap', 'wbug_swap', 'aispace_swap', 'wint_swap', 
+                       'ling_swap', 'gloria_swap', 'light_swap', 'rwai_swap', 'nyko_swap', 'super_swap',
+                       'xllm2_swap', 'maneki_swap', 'whim_swap']
         swap_doc = db[token_collection].find_one(
             {"genesis_token_symbol": token.upper()},
             sort=[("timestamp", 1)]
@@ -251,11 +256,20 @@ tabdf = tabdf[[
     "genesis_virtual_price": "GENESIS PRICE \n($VIRTUAL)",
     "virtual_usdc_price": "VIRTUAL \nPRICE ($)"
 })
-tabdf["MAKER"] = tabdf["MAKER"].apply(lambda addr: f"<span title='{addr}'>{addr[:10]}...</span>" if isinstance(addr, str) else addr)
+tabdf["MAKER"] = tabdf["MAKER"].apply(lambda addr: f"<span title='{addr}'>{addr[:5]}...{addr[-5:]}</span>" if isinstance(addr, str) else addr)
 tabdf["TIME_PARSED"] = pd.to_datetime(tabdf["TIME"], errors='coerce')
 tabdf["TX_TYPE_RAW"] = tabdf["TX TYPE"].str.extract(r">(\w+)<")
 tabdf["TRANSACTION VALUE ($)"] = (pd.to_numeric(tabdf[token.upper()], errors="coerce") * pd.to_numeric(tabdf["GENESIS \nPRICE ($)"], errors="coerce")).round(4)
 filtered_df = tabdf.copy()
+
+sortable_columns = [
+    "BLOCK",                   # from "blockNumber"
+    "TIME",                    # from "timestampReadable"
+    "VIRTUAL",                 # from "Virtual"
+    "GENESIS \nPRICE ($)",     # from "genesis_usdc_price"
+    "GENESIS PRICE \n($VIRTUAL)", # from "genesis_virtual_price"
+    "VIRTUAL \nPRICE ($)"      # from "virtual_usdc_price"
+]
 
 tab1, tab2, tab3 = st.tabs(["TRANSCTIONS", "SNIPER INSIGHTS", "OTHER"])
 
@@ -279,7 +293,7 @@ with tab1:
     
         with col4:
             st.markdown("<div style='color: white; font-weight: 500;'>Sort by</div>", unsafe_allow_html=True)
-            sort_col = st.selectbox("", filtered_df.columns.tolist())
+            sort_col = st.selectbox("Sort by", sortable_columns)
     
         with col5:
             st.markdown("<div style='color: white; font-weight: 500;'>Order</div>", unsafe_allow_html=True)
@@ -559,12 +573,16 @@ with tab2:
     # Create filtered_df and add S.No once, cleanly
     filtered_df = pnl_df.copy().reset_index(drop=True)
     #filtered_df["S.No"] = range(1, len(filtered_df) + 1)
-
+    filtered_df["Wallet Address"] = filtered_df["Wallet Address"].apply(
+        lambda addr: f"<span title='{addr}'>{addr[:5]}...{addr[-5:]}</span>" if isinstance(addr, str) else addr
+    )
+    filtered_df["Net PnL ($)"] = filtered_df["Net PnL ($)"].apply(
+        lambda x: f"<span style='color: {'green' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>"
+    )
     # Sort by Net PnL descending
     filtered_df = filtered_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
     #filtered_df["S.No"] = range(1, len(filtered_df) + 1)
     #st.dataframe(filtered_df, hide_index=True)
-
     html_table_sniper = filtered_df.to_html(escape=False, index=False,  float_format="%.4f")
     st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
 
