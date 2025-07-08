@@ -589,7 +589,7 @@ with tab2:
     )
 
     filtered_df["Net PnL ($)_styled"] = filtered_df["Net PnL ($)"].apply(
-        lambda x: f"<span style='color: {'green' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>"
+        lambda x: f"<span style='color: {'74fe64' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>"
     )
     # Sort by Net PnL descending
     filtered_df = filtered_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
@@ -600,19 +600,31 @@ with tab2:
 
     # Get successful snipers
     successful_snipers = filtered_df[filtered_df['Net PnL ($)'] > 0]
+    # Columns in desired order
+    ordered_cols = [
+        "Wallet Display",           # styled version
+        "Net PnL ($)_styled",       # styled version
+        "Unrealized PnL ($)",
+        "Remaining Tokens",
+        "Txn Count (BUY)",
+        "Txn Count (SELL)",
+        "First Buy Time",
+        "Last Sell Time",
+        "Average Buy Price ($)",
+        "Average Sell Price ($)",
+        "Total Tax Paid",
+        "Total Tx Fees Paid (ETH)"
+    ]
 
-    # Render HTML table
+    # Rename for display and render
     html_table_sniper = (
-        filtered_df
-        .drop(columns=["Net PnL ($)", "Wallet Address"])  # drop raw
+        filtered_df[ordered_cols]
         .rename(columns={
-            "Net PnL ($)_styled": "Net PnL ($)",
-            "Wallet Display": "Wallet Address"
+            "Wallet Display": "Wallet Address",
+            "Net PnL ($)_styled": "Net PnL ($)"
         })
         .to_html(escape=False, index=False)
     )
-
-
     st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
 
     # KPIs
