@@ -251,7 +251,6 @@ end_date = end_date or today
 
 # 2. Fetch all token docs
 all_docs = list(db["swap_progress"].find({}))
-filtered_tokens = []
 
 # 3. Sort tokens by launch time descending
 # 3. Sort tokens based on user choice
