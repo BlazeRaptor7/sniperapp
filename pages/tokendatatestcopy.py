@@ -201,10 +201,15 @@ with cold:
                        'bolz_swap', 'trivi_swap', 'vruff_swap', 'wbug_swap', 'aispace_swap', 'wint_swap', 
                        'ling_swap', 'gloria_swap', 'light_swap', 'rwai_swap', 'nyko_swap', 'super_swap',
                        'xllm2_swap', 'maneki_swap', 'whim_swap']
-        swap_doc = db[token_collection].find_one(
-            {"genesis_token_symbol": token.upper()},
-            sort=[("timestamp", 1)]
-        )
+        swap_doc = None
+        for col_name in token_collection:
+            result = db[col_name].find_one(
+                {"genesis_token_symbol": token.upper()},
+                sort=[("timestamp", 1)]
+            )
+            if result:
+                swap_doc = result
+                break
 
         name = swap_doc.get("persona_name", "N/A") if swap_doc else "N/A"
         dao_addr = swap_doc.get("persona_dao", "N/A") if swap_doc else "N/A"

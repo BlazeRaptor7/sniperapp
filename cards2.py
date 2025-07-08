@@ -235,7 +235,7 @@ end_date = end_date or today
 all_docs = list(db["swap_progress"].find({}))
 filtered_tokens = []
 
-for doc in all_docs:
+"""for doc in all_docs:
     symbol = doc.get("token_symbol", "").lower()
     address = doc.get("token_address", "").lower()
     updated_at = doc.get("updated_at")
@@ -257,7 +257,7 @@ for doc in all_docs:
     if not (start_date <= ts.date() <= end_date):
         continue
 
-    filtered_tokens.append(doc["token_symbol"])
+    filtered_tokens.append(doc["token_symbol"])"""
 
 # 3. Sort tokens by launch time descending
 # 3. Sort tokens based on user choice
@@ -269,5 +269,14 @@ if sort_option == "Launch Time":
     ), reverse=reverse_order)
 else:  # Sort by Name
     filtered_tokens = sorted(filtered_tokens, key=lambda t: t.lower(), reverse=reverse_order)
+# Use predefined list of 21 tokens
+token_collection = [
+    'jarvis_swap', 'afath_swap', 'pilot_swap', 'tian_swap', 'vgn_swap', 'badai_swap',
+    'bolz_swap', 'trivi_swap', 'vruff_swap', 'wbug_swap', 'aispace_swap', 'wint_swap', 
+    'ling_swap', 'gloria_swap', 'light_swap', 'rwai_swap', 'nyko_swap', 'super_swap',
+    'xllm2_swap', 'maneki_swap', 'whim_swap'
+]
+
+filtered_tokens = token_collection
 
 render_token_cards_from_docs(filtered_tokens, all_docs)
