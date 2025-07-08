@@ -575,7 +575,9 @@ with tab2:
         potential_sniper_df, combined_df = process_sniper_data(combined_df, token_launch_blocks)
         
         pnl_df = calculate_pnl(potential_sniper_df, combined_df)
-
+        if pnl_df.empty:
+            st.markdown("### ❌ No Snipers Detected")
+            st.stop()
     #-----------------------------------------------------------------------------------------------------------------------------
     # Streamlit UI
     st.title(f"Potential Snipers – PnL Overview for {token_upper}")
@@ -585,8 +587,6 @@ with tab2:
     filtered_df = pnl_df.copy().reset_index(drop=True)
     #filtered_df["S.No"] = range(1, len(filtered_df) + 1)
     # Ensure correct renaming & styling
-    st.write("filtered_df columns:", filtered_df.columns.tolist())
-    st.write("filtered_df shape:", filtered_df.shape)
 
     filtered_df["Wallet Display"] = filtered_df["Wallet Address"].apply(
         lambda addr: f"<span title='{addr}'>{addr[:5]}...{addr[-5:]}</span>" if isinstance(addr, str) else addr
