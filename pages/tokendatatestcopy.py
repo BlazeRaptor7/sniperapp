@@ -148,6 +148,7 @@ scrollable_style = """
         padding: 1px 3px;
         text-align: center;
         font-size: 15px;
+        color: #fff;
         font-weight: 300;
     }
     
@@ -588,14 +589,20 @@ with tab2:
     filtered_df = filtered_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
     #filtered_df["S.No"] = range(1, len(filtered_df) + 1)
     #st.dataframe(filtered_df, hide_index=True)
-    html_table_sniper = filtered_df.to_html(escape=False, index=False,  float_format="%.4f")
+    # Convert column to numeric
+    filtered_df['Net PnL ($)'] = pd.to_numeric(filtered_df['Net PnL ($)'], errors='coerce')
+
+    # Get successful snipers
+    successful_snipers = filtered_df[filtered_df['Net PnL ($)'] > 0]
+
+    # Render HTML table
+    html_table_sniper = filtered_df.to_html(escape=False, index=False, float_format="%.4f")
     st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
 
-
-    # KPI Section
+    # KPIs
     num_unique_snipers = filtered_df['Wallet Address'].nunique()
-    successful_snipers = filtered_df[filtered_df['Net PnL ($)'] > 0]
     success_rate = (len(successful_snipers) / num_unique_snipers * 100) if num_unique_snipers > 0 else 0
+
 
     total_realized_pnl = filtered_df['Net PnL ($)'].sum()
     total_unrealized_pnl = filtered_df['Unrealized PnL ($)'].sum()
