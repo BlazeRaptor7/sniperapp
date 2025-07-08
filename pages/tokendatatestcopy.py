@@ -589,7 +589,7 @@ with tab2:
     )
 
     filtered_df["Net PnL ($)_styled"] = filtered_df["Net PnL ($)"].apply(
-        lambda x: f"<span style='color: {'74fe64' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>"
+        lambda x: f"<span style='color: {'#74fe64' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>"
     )
     # Sort by Net PnL descending
     filtered_df = filtered_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
