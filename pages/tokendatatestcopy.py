@@ -252,7 +252,7 @@ tabdf["Virtual"] = pd.to_numeric(tabdf["Virtual"]).round(4)
 tabdf.rename(columns={"TokenAmount": token.upper()}, inplace=True)
 
 tabdf["txHash"] = tabdf["txHash"].apply(lambda tx: f"<a href='https://basescan.org/tx/{tx}' target='_blank'>Link to txn</a>")
-tabdf["swapType"] = tabdf["swapType"].apply(lambda x: f"<span style='color: {'green' if x == 'buy' else 'red'}; font-weight:bold'>{x}</span>")
+tabdf["swapType"] = tabdf["swapType"].apply(lambda x: f"<span style='color: {'#74fe64' if x == 'buy' else 'red'}; font-weight:bold'>{x}</span>")
 
 tabdf = tabdf[[
     "blockNumber", "txHash", "maker", "swapType", "label", "timestampReadable",
