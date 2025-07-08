@@ -55,6 +55,7 @@ html, body {
 .stApp {
     width: 100vw;
     box-sizing: border-box;
+    background: radial-gradient(circle, rgba(18, 73, 97, 1) 0%, rgba(5, 27, 64, 1) 100%);
     background: #013155;
     background-size: cover;
     background-attachment: fixed;
@@ -62,7 +63,7 @@ html, body {
 }
 .card {
     backdrop-filter: blur(12px);
-    background: radial-gradient(circle, rgba(127, 161, 195, 1) 0%, rgba(122, 178, 211, 1) 100%);
+    background: rgba(255, 255, 255, 0.25);
     padding: 16px;
     border-radius: 12px;
     box-shadow: 0 4px 12px rgba(0,0,0,0.1);
