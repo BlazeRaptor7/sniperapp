@@ -584,9 +584,10 @@ with tab2:
     # Create filtered_df and add S.No once, cleanly
     filtered_df = pnl_df.copy().reset_index(drop=True)
     #filtered_df["S.No"] = range(1, len(filtered_df) + 1)
-    filtered_df["Wallet Address"] = filtered_df["Wallet Address"].apply(
+    filtered_df["Wallet Display"] = filtered_df["Wallet Address"].apply(
         lambda addr: f"<span title='{addr}'>{addr[:5]}...{addr[-5:]}</span>" if isinstance(addr, str) else addr
     )
+
     filtered_df["Net PnL ($)_styled"] = filtered_df["Net PnL ($)"].apply(
         lambda x: f"<span style='color: {'green' if x >= 0 else 'red'}; font-weight:bold'>{x:.4f}</span>"
     )
@@ -601,9 +602,16 @@ with tab2:
     successful_snipers = filtered_df[filtered_df['Net PnL ($)'] > 0]
 
     # Render HTML table
-    html_table_sniper = filtered_df.drop(columns=["Net PnL ($)"]).rename(
-        columns={"Net PnL ($)_styled": "Net PnL ($)"}
-    ).to_html(escape=False, index=False)
+    html_table_sniper = (
+        filtered_df
+        .drop(columns=["Net PnL ($)", "Wallet Address"])  # drop raw
+        .rename(columns={
+            "Net PnL ($)_styled": "Net PnL ($)",
+            "Wallet Display": "Wallet Address"
+        })
+        .to_html(escape=False, index=False)
+    )
+
 
     st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
 
