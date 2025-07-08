@@ -43,7 +43,7 @@ st.markdown("""
     .stApp {
         width: 100vw;
         box-sizing: border-box;
-        background: radial-gradient(circle, rgba(18, 73, 97, 1) 0%, rgba(5, 27, 64, 1) 100%);
+        background: radial-gradient(circle, rgba(158, 198, 243, 1) 0%, rgba(189, 221, 228, 1) 100%);
     }
     .glass-kpi {
         background: rgba(255, 255, 255, 0.12);
@@ -157,7 +157,7 @@ scrollable_style = """
     
     /* Header styling */
     .scrollable th {
-        background: rgba(70, 70, 70, 0.8);
+        background: rgba(70, 70, 70);
         position: sticky; top:0;
         color: #fff;
         text-transform: uppercase;
