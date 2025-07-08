@@ -199,9 +199,6 @@ allowed_symbols = {col.replace("_swap", "").lower() for col in token_collection}
 filtered_tokens = [doc["token_symbol"]
                    for doc in all_docs
                    if doc.get("token_symbol", "").lower() in allowed_symbols]
-st.write("Filtered tokens:", filtered_tokens)
-
-st.write("Docs in swap_progress:", len(all_docs))
 
 # Sorting logic
 reverse_order = sort_order == "Descending"
@@ -260,5 +257,4 @@ default_start = date(2024, 1, 1)
 start_date = start_date or default_start
 end_date = end_date or today
 # Use predefined list of 21 tokens
-st.write("Rendering cards for tokens:", filtered_tokens)
 render_token_cards_from_docs(filtered_tokens, all_docs)
