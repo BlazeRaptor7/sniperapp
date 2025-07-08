@@ -302,7 +302,7 @@ with tab1:
     
         with col4:
             st.markdown("<div style='color: white; font-weight: 500;'>Sort by</div>", unsafe_allow_html=True)
-            sort_col = st.selectbox("Sort by", sortable_columns)
+            sort_col = st.selectbox("", sortable_columns)
     
         with col5:
             st.markdown("<div style='color: white; font-weight: 500;'>Order</div>", unsafe_allow_html=True)
@@ -332,7 +332,7 @@ with tab1:
     with st.container():
         col6, col7 = st.columns([1, 4])
         with col6:
-            st.markdown("<div style='color: white; font-weight: 500;'>Filter by</div>", unsafe_allow_html=True)
+            st.markdown("<div style='color: white; font-weight: 500;'>Select Metric to Filter by range :</div>", unsafe_allow_html=True)
             numeric_columns = [token.upper(), "VIRTUAL", "GENESIS \nPRICE ($)", "TRANSACTION VALUE ($)", "GENESIS PRICE \n($VIRTUAL)", "VIRTUAL \nPRICE ($)"]
             selected_col = st.selectbox("", numeric_columns)
     
