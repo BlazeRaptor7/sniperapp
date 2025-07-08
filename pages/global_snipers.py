@@ -431,29 +431,6 @@ with st.sidebar:
             """,
             unsafe_allow_html=True
             )
-    """st.header("🔍 Filters")
-    token_filter = st.multiselect("Select Token(s):", options=sorted([t for t in pnl_df["Token"].unique() if t is not None]), default=[])
-    wallet_search = st.text_input("Enter Wallet Address:", value="")
-    # Date range filter for First Buy Time
-    min_date = pd.to_datetime(pnl_df["First Buy Time"]).min()
-    max_date = pd.to_datetime(pnl_df["First Buy Time"]).max()
-    date_range = st.date_input(
-        "Select First Buy Date Range:",
-        value=(min_date.date(), max_date.date()),
-        min_value=min_date.date(),
-        max_value=max_date.date()
-    )
-    # Net PnL range filter
-    min_pnl = float(pnl_df["Net PnL"].min())
-    max_pnl = float(pnl_df["Net PnL"].max())
-    pnl_range = st.slider(
-        "Select Net PnL Range:",
-        min_value=min_pnl,
-        max_value=max_pnl,
-        value=(min_pnl, max_pnl),
-        step=0.01
-    )
-    st.markdown("---")"""
 
 # Streamlit UI
 # Page Title
@@ -464,7 +441,7 @@ header_left, header_right = st.columns([6, 1])
 with header_right:
     from datetime import date
     with st.popover("FILTER SNIPERS", icon="🔽", use_container_width=True):
-        s1, s2 = st.columns(2)
+        s1, s2, s3 = st.columns(3)
         with s1:
             token_filter = st.multiselect(
                 "Select Token(s):",
@@ -473,8 +450,6 @@ with header_right:
             )
         with s2:
             wallet_search = st.text_input("Enter Wallet Address:", value="")
-
-        s3, s4 = st.columns(2)
         with s3:
             min_date = pd.to_datetime(pnl_df["First Buy Time"]).min()
             max_date = pd.to_datetime(pnl_df["First Buy Time"]).max()
@@ -484,6 +459,8 @@ with header_right:
                 min_value=min_date.date(),
                 max_value=max_date.date()
             )
+
+        s4 = st.columns(1)
         with s4:
             min_pnl = float(pnl_df["Net PnL"].min())
             max_pnl = float(pnl_df["Net PnL"].max())
