@@ -197,9 +197,10 @@ for col in token_collection:
         collection_to_symbol[col] = doc["token_symbol"]
 
 filtered_tokens = list(collection_to_symbol.values())
-
+st.write("Filtered tokens:", filtered_tokens)
 # Fetch all docs once
 all_docs = list(db["swap_progress"].find({}))
+st.write("Docs in swap_progress:", len(all_docs))
 
 # Sorting logic
 reverse_order = sort_order == "Descending"
@@ -272,5 +273,5 @@ if sort_option == "Launch Time":
 else:  # Sort by Name
     filtered_tokens = sorted(filtered_tokens, key=lambda t: t.lower(), reverse=reverse_order)
 # Use predefined list of 21 tokens
-
+st.write("Rendering cards for tokens:", filtered_tokens)
 render_token_cards_from_docs(filtered_tokens, all_docs)
