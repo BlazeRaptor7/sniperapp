@@ -622,7 +622,7 @@ with tab2:
                 "Wallet Display": "Wallet Address",
                 "Net PnL ($)_styled": "Net PnL ($)"
             })
-            .to_html(escape=False, index=False)
+            .to_html(escape=False, index=False, float_format="%.4f")
         )
         st.markdown(f"<div class='scrollable'>{html_table_sniper}</div>", unsafe_allow_html=True)
 
@@ -631,6 +631,8 @@ with tab2:
 
     # Ensure numeric version is available for filtering
     filtered_df['Net PnL ($)'] = pd.to_numeric(filtered_df['Net PnL ($)'], errors='coerce')
+    #sorting it in a descending order so that greatest net PNL is shown at top 
+    pnl_df = pnl_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
 
     successful_snipers = filtered_df[filtered_df['Net PnL ($)'] > 0]
     num_unique_snipers = filtered_df['Wallet Address'].nunique()
@@ -690,31 +692,43 @@ with tab2:
         """, unsafe_allow_html=True)
 
     # Top 5 Traders by Net PnL
-    st.subheader('Top 5 Traders by Total Net PnL')
-    top5 = filtered_df.nlargest(5, 'Net PnL ($)')
-    st.markdown("""
-        <style>
-        .glass-chart {
-            padding: 1rem;
-            margin: 1rem 0;
-            background: rgba(255, 255, 255, 0.12);
-            border-radius: 12px;
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 1px solid rgba(255, 255, 255, 0.25);
-            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-        }
-        </style>
-    """, unsafe_allow_html=True)
-    bar_chart = alt.Chart(top5).mark_bar().encode(
-        y=alt.Y('Wallet Address:N', title='Wallet Address', sort=top5['Wallet Address'].tolist()),
-        x=alt.X('Net PnL ($):Q', title='Net PnL ($)'),
-        tooltip=['Wallet Address', 'Net PnL ($)']
-    ).properties(
-        width=600,
-        height=300
-    )
-    st.altair_chart(bar_chart, use_container_width=True)
+    num_snipers = len(filtered_df)
+
+    if num_snipers == 1:
+        st.info("Only one sniper detected — skipping bar chart.")
+    elif 2 <= num_snipers <= 5:
+        st.subheader('Top Snipers by Total Net PnL')
+        top = filtered_df.copy()
+    elif num_snipers > 5:
+        st.subheader('Top 5 Snipers by Total Net PnL')
+        top = filtered_df.nlargest(5, 'Net PnL ($)')
+
+    if num_snipers >= 2:
+        st.markdown("""
+            <style>
+            .glass-chart {
+                padding: 1rem;
+                margin: 1rem 0;
+                background: rgba(255, 255, 255, 0.12);
+                border-radius: 12px;
+                backdrop-filter: blur(10px);
+                -webkit-backdrop-filter: blur(10px);
+                border: 1px solid rgba(255, 255, 255, 0.25);
+                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+            }
+            </style>
+        """, unsafe_allow_html=True)
+
+        bar_chart = alt.Chart(top).mark_bar().encode(
+            y=alt.Y('Wallet Address:N', title='Wallet Address', sort=top['Wallet Address'].tolist()),
+            x=alt.X('Net PnL ($):Q', title='Net PnL ($)'),
+            tooltip=['Wallet Address', 'Net PnL ($)']
+        ).properties(
+            width=600,
+            height=300
+        )
+        st.altair_chart(bar_chart, use_container_width=True)
+
 
 with tab3:
         st.header("MORE INSIGHTS INCOMING, STAY TUNED!")
