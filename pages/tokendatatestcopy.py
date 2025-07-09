@@ -81,34 +81,50 @@ st.markdown("""
 
 # ───── Sidebar ─────
 def render_sidebar():
-    """Render the custom sidebar with navigation and branding."""
     with st.sidebar:
         st.markdown("---")
-        #HERE, WE CHECK WHICH PAGE WE ARE ON AND LATER USE IT TO HIGHLIGHT THE CURRENT PAGE
         current_script = os.path.basename(__file__).lower()
+
         routes = [
-            ("SELECT ANOTHER TOKEN", "/cards2", "cards2.py"),
-            ("GLOBAL SNIPER ANALYSIS", "/global_snipers", "global_snipers.py")
+            ("🏠 Home", "/", "cards2.py"),
+            ("🪙 Token Details", "/🪙 Token Details", "tokendatatestcopy.py"),
+            ("🌍 Global Sniper Analysis", "/🌍 Global Sniper Analysis", "global_snipers.py")
         ]
 
-        for label, path, filename in routes:
-            is_active = filename.lower() == current_script
-            bg = "#124961" if is_active else "transparent"
-            st.markdown(
-                f"""
-                <a href="{path}" style="
-                    display: block;
-                    padding: 0.5rem 1rem;
-                    margin-bottom: 0.5rem;
-                    font-weight: bold;
-                    border-radius: 6px;
-                    color: white;
-                    background-color: {bg};
-                    text-decoration: none;
-                ">{label}</a>
-                """,
-                unsafe_allow_html=True
-            )
+        for label, href, script_name in routes:
+            is_active = script_name.lower() == current_script
+            bg_color = "rgba(227,250,255,0.2)" if is_active else "rgba(42,42,42,0.4)"
+            if is_active:
+                st.markdown(
+                    f"""
+                    <div style="
+                        display: block;
+                        padding: 0.5rem 1rem;
+                        margin-bottom: 0.5rem;
+                        font-weight: 500;
+                        border-radius: 6px;
+                        color: white;
+                        background-color: {bg_color};
+                    ">{label} ✅</div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            else:
+                st.markdown(
+                    f"""
+                    <a href="{href}" target="_self" style="
+                        display: block;
+                        padding: 0.5rem 1rem;
+                        margin-bottom: 0.5rem;
+                        font-weight: 500;
+                        border-radius: 6px;
+                        color: white;
+                        background-color: {bg_color};
+                        text-decoration: none;
+                    ">{label}</a>
+                    """,
+                    unsafe_allow_html=True
+                )
         st.markdown("---")
 
 render_sidebar()
@@ -152,12 +168,12 @@ scrollable_style = """
         font-size: 15px;
         color: #fff;
         font-weight: 300;
-        border: 1px solid transparent;
+        border: 1px solid rgba(248, 248, 248, 0.1);
     }
     
     /* Header styling */
     .scrollable th {
-        background: rgba(70, 70, 70);
+        background: rgba(70, 70, 70, 1);
         position: sticky; top:0;
         color: #fff;
         text-transform: uppercase;
@@ -184,15 +200,27 @@ db = client['genesis_tokens_swap_info']
 # ───── Token Parameter ─────
 query_params = st.query_params
 token = query_params.get('token', '').lower().strip()
+# Token list (use DB here if needed)
+available_tokens = [
+    "jarvis", "pilot", "tian", "vgn", "badai", "bolz", "trivi", "vruff",
+    "wbug", "aispace", "wint", "ling", "gloria", "light", "rwai", "nyko",
+    "super", "xllm2", "maneki", "whim"
+]
+
+# If no token in URL, show fallback UI
 if not token:
-    st.warning("⚠️ No token specified. Redirecting to token choice...")
-    st.switch_page("cards2.py")
-colh, cold = st.columns([1, 3])
+    st.warning("⚠️ No token selected. Please return to the home page and choose a token.")
+    selected = st.selectbox("Choose a token to view its data:", sorted(available_tokens))
+    
+    if st.button("View Token Details") and selected:
+        st.switch_page(f"/tokendatatestcopy.py?token={selected.lower()}")
+    
+    st.stop()
+colh, cold, colmpty = st.columns([3, 4, 5])
 with colh:
     st.markdown(f"<h1 style='margin-top: 0rem; color: white;'>TOKEN {token.upper()}</h1>", unsafe_allow_html=True)
 
 with cold:
-    st.write("")
     doc = db["swap_progress"].find_one({"token_symbol": token.upper()})
     if doc:
         token_addr = doc.get("token_address", "N/A")
@@ -219,6 +247,32 @@ with cold:
         dao_addr = swap_doc.get("persona_dao", "N/A") if swap_doc else "N/A"
         timestamp = swap_doc.get("timestamp", 0) if swap_doc else 0
         launch_time = datetime.fromtimestamp(timestamp, tz=timezone.utc).strftime('%d-%m-%Y %H:%M') if timestamp else "N/A"
+        collection_name = f"{token.lower()}_swap"
+        swap_count = db[collection_name].count_documents({})
+        details_card = f"""
+        <div style="
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 0.5rem;
+            padding: 1rem;
+            margin-top: 0.5rem;
+            font-size: 0.9rem;
+            font-family: monospace;
+            color: white;
+            display: grid;
+            grid-template-columns: 120px auto;
+            row-gap: 0.5rem;
+        ">
+            <div>Token Address:</div> <div style="color: #4ef577;">{token_addr}</div>
+            <div>LP Address:</div> <div style="color: #4ef577;">{lp_addr}</div>
+            <div>DAO Address:</div> <div style="color: #4ef577;">{dao_addr}</div>
+            <div>Total Swaps:</div> <div style="color: #4ef577;">{swap_count}</div>
+        </div>
+        """
+
+        st.markdown(details_card, unsafe_allow_html=True)
+
+with colmpty:
+    st.write("")
 
 # ───── Collection Naming ─────
 token_in_col = f"{token.upper()}_IN"
@@ -231,7 +285,7 @@ collection_name = f"{token}_swap"
 data = list(db[collection_name].find({}, {
     "blockNumber": 1, "txHash": 1, "maker": 1, "swapType": 1, "label": 1, "timestampReadable": 1,
     token_in_col: 1, token_out_col: 1, virtual_in_col: 1, virtual_out_col: 1,
-    "genesis_usdc_price": 1, "genesis_virtual_price": 1, "virtual_usdc_price": 1
+    "genesis_usdc_price": 1, "genesis_virtual_price": 1, "virtual_usdc_price": 1, "Tax_1pct":1, "transactionFee":1
 }))
 #st.write("Fetched rows:", len(data))
 #st.write("Sample doc:", data[0] if data else "No data")
@@ -256,15 +310,16 @@ tabdf["swapType"] = tabdf["swapType"].apply(lambda x: f"<span style='color: {'#7
 
 tabdf = tabdf[[
     "blockNumber", "txHash", "maker", "swapType", "label", "timestampReadable",
-    token.upper(), "Virtual", "genesis_usdc_price", "genesis_virtual_price", "virtual_usdc_price"
+    token.upper(), "Virtual", "genesis_usdc_price", "genesis_virtual_price", "virtual_usdc_price", "Tax_1pct", "transactionFee"
 ]].rename(columns={
     "blockNumber": "BLOCK", "txHash": "TX HASH", "maker": "MAKER",
     "swapType": "TX TYPE", "label": "SWAP TYPE", "timestampReadable": "TIME",
     "Virtual": "VIRTUAL",
     "genesis_usdc_price": "GENESIS \nPRICE ($)",
     "genesis_virtual_price": "GENESIS PRICE \n($VIRTUAL)",
-    "virtual_usdc_price": "VIRTUAL \nPRICE ($)"
-})
+    "virtual_usdc_price": "VIRTUAL \nPRICE ($)",
+    "Tax_1pct": "TAX (ETH)",
+    "transactionFee": f"TX FEE ({token.upper()})"})
 tabdf["MAKER"] = tabdf["MAKER"].apply(lambda addr: f"<span title='{addr}'>{addr[:5]}...{addr[-5:]}</span>" if isinstance(addr, str) else addr)
 tabdf["TIME_PARSED"] = pd.to_datetime(tabdf["TIME"], errors='coerce')
 tabdf["TX_TYPE_RAW"] = tabdf["TX TYPE"].str.extract(r">(\w+)<")
@@ -277,7 +332,8 @@ sortable_columns = [
     "VIRTUAL",                 # from "Virtual"
     "GENESIS \nPRICE ($)",     # from "genesis_usdc_price"
     "GENESIS PRICE \n($VIRTUAL)", # from "genesis_virtual_price"
-    "VIRTUAL \nPRICE ($)"      # from "virtual_usdc_price"
+    "VIRTUAL \nPRICE ($)",     # from "virtual_usdc_price"
+    "TAX (ETH)",f"TX FEE ({token.upper()})"
 ]
 
 tab1, tab2, tab3 = st.tabs(["TRANSCTIONS", "SNIPER INSIGHTS", "OTHER"])
@@ -309,13 +365,14 @@ with tab1:
             sort_dir = st.radio("", options=["Ascending", "Descending"], horizontal=True)
     
         with col10:
-            st.markdown("<div style='color: white; font-weight: 500;'>Search BLOCK or MAKER</div>", unsafe_allow_html=True)
-            search_query = st.text_input("")
+            st.markdown("<div style='color: white; font-weight: 500;'>Search</div>", unsafe_allow_html=True)
+            search_query = st.text_input("", placeholder="BLOCK | MAKER | TX HASH")
             if search_query:
                 q = search_query.strip().lower()
                 filtered_df = filtered_df[
                     filtered_df["BLOCK"].astype(str).str.contains(q) |
-                    filtered_df["MAKER"].str.lower().str.contains(q)
+                    filtered_df["MAKER"].str.lower().str.contains(q) |
+                    filtered_df["TX HASH"].str.lower().str.contains(q)
                 ]
     
     # ───── Apply Filters ─────
@@ -333,7 +390,7 @@ with tab1:
         col6, col7 = st.columns([1, 4])
         with col6:
             st.markdown("<div style='color: white; font-weight: 500;'>Select Metric to Filter by range :</div>", unsafe_allow_html=True)
-            numeric_columns = [token.upper(), "VIRTUAL", "GENESIS \nPRICE ($)", "TRANSACTION VALUE ($)", "GENESIS PRICE \n($VIRTUAL)", "VIRTUAL \nPRICE ($)"]
+            numeric_columns = [token.upper(), "VIRTUAL", "GENESIS \nPRICE ($)", "TRANSACTION VALUE ($)", "GENESIS PRICE \n($VIRTUAL)", "VIRTUAL \nPRICE ($)", "TAX (ETH)", f"TX FEE ({token.upper()})"]
             selected_col = st.selectbox("", numeric_columns)
     
         with col7:
@@ -357,16 +414,79 @@ with tab1:
     ordered_cols = [
         "BLOCK", "TX HASH", "MAKER", "TX TYPE", "SWAP TYPE", "TIME",
         token.upper(), "VIRTUAL", "GENESIS \nPRICE ($)", "TRANSACTION VALUE ($)",
-        "GENESIS PRICE \n($VIRTUAL)", "VIRTUAL \nPRICE ($)"
+        "GENESIS PRICE \n($VIRTUAL)", "VIRTUAL \nPRICE ($)", "TAX (ETH)", f"TX FEE ({token.upper()})"
     ]
     filtered_df = filtered_df[[col for col in ordered_cols if col in filtered_df.columns]]
     
-    html_table = filtered_df.to_html(escape=False, index=False, float_format="%.4f")
+    html_table = filtered_df.to_html(escape=False, index=False, float_format="%.8f")
     
-    with st.container():
-        st.markdown(scrollable_style, unsafe_allow_html=True)
-        st.markdown(f"<div class='scrollable'>{html_table}</div>", unsafe_allow_html=True)
+    tabdf["date"] = tabdf["TIME_PARSED"].dt.date
+    volume_df = tabdf.groupby(["date", "TX_TYPE_RAW"])[token.upper()].sum().reset_index()
+    
+eq_height = 360
 
+# --- ALT 1: Swap Volume Over Time (Altair Line Chart) ---
+chart = alt.Chart(volume_df).mark_line().encode(
+    x=alt.X('date:T', title='DATE'),
+    y=alt.Y(f'{token.upper()}:Q', title="SWAP VOLUME"),
+    color=alt.Color('TX_TYPE_RAW:N', title='TX TYPE'),
+    tooltip=['date:T', f'{token.upper()}:Q', 'TX_TYPE_RAW']
+).properties(title=" ", width=700, height=eq_height)
+
+# --- Prepare Buyers & Sellers Data (clean + group) ---
+def clean_address(addr):
+    import re
+    if isinstance(addr, str):
+        addr = re.sub(r'<.*?>', '', addr)  # Strip HTML tags if present
+        return addr
+    return addr
+
+tabdf["MAKER_CLEAN"] = tabdf["MAKER"].apply(clean_address)
+
+buyers = (
+    tabdf[tabdf["TX_TYPE_RAW"] == "buy"]
+    .groupby("MAKER_CLEAN")[token.upper()]
+    .sum()
+    .nlargest(10)
+    .reset_index()
+)
+buyers["type"] = "Buyer"
+
+sellers = (
+    tabdf[tabdf["TX_TYPE_RAW"] == "sell"]
+    .groupby("MAKER_CLEAN")[token.upper()]
+    .sum()
+    .nlargest(10)
+    .reset_index()
+)
+sellers["type"] = "Seller"
+
+buyers_sellers = pd.concat([buyers, sellers])
+buyers_sellers["MAKER_SHORT"] = buyers_sellers["MAKER_CLEAN"].apply(lambda a: a[:6] + "..." + a[-4:] if isinstance(a, str) else a)
+
+# --- ALT 2: Top 10 Buyers & Sellers (Altair Bar Chart) ---
+chart2 = alt.Chart(buyers_sellers).mark_bar().encode(
+    x=alt.X(f'{token.upper()}:Q', title="TOTAL SWAPPED"),
+    y=alt.Y('MAKER_SHORT:N', sort='-x', title='MAKER'),
+    color=alt.Color('type:N', title='TX TYPE'),
+    tooltip=['MAKER_CLEAN', f'{token.upper()}', 'type']
+).properties(title=" ", width=700, height=eq_height)
+
+# --- Render Everything ---
+with st.container():
+    st.markdown(scrollable_style, unsafe_allow_html=True)
+    st.markdown(f"<div class='scrollable'>{html_table}</div>", unsafe_allow_html=True)
+    st.title("")
+
+    chcol1, chcol2 = st.columns(2)
+
+    with chcol1:
+        st.subheader("SWAP VOLUME OVER TIME")
+        st.altair_chart(chart, use_container_width=True)
+
+    with chcol2:
+        st.subheader("TOP BUYERS AND SELLERS")
+        st.altair_chart(chart2, use_container_width=True)
 
 with tab2:
 

@@ -108,37 +108,57 @@ html, body {
 </style>
 """, unsafe_allow_html=True)
 
-#--SIDEBAR
+# ───── Sidebar ─────
 def render_sidebar():
-    """Render the custom sidebar with navigation and branding."""
     with st.sidebar:
         st.markdown("---")
-        #HERE, WE CHECK WHICH PAGE WE ARE ON AND LATER USE IT TO HIGHLIGHT THE CURRENT PAGE
         current_script = os.path.basename(__file__).lower()
+
         routes = [
-            ("TOKEN BASED ANALYSIS", "/cards2", "cards2.py"),
-            ("GLOBAL SNIPER ANALYSIS", "/global_snipers", "global_snipers.py")
+            ("🏠 Home", "cards2.py"),
+            ("🌍 Global Sniper Analysis", "global_snipers.py")
         ]
 
-        for label, path, filename in routes:
+        for label, filename in routes:
             is_active = filename.lower() == current_script
-            bg = "#124961" if is_active else "transparent"
-            st.markdown(
-                f"""
-                <a href="{path}" style="
-                    display: block;
-                    padding: 0.5rem 1rem;
-                    margin-bottom: 0.5rem;
-                    font-weight: bold;
-                    border-radius: 6px;
-                    color: white;
-                    background-color: {bg};
-                    text-decoration: none;
-                ">{label}</a>
-                """,
-                unsafe_allow_html=True
-            )
+            bg_color = "rgba(227,250,255,0.2)" if is_active else "rgba(42,42,42,0.4)"
+            if is_active:
+                # Render as a disabled "highlighted" block
+                st.markdown(
+                    f"""
+                    <div style="
+                        display: block;
+                        padding: 0.5rem 1rem;
+                        margin-bottom: 0.5rem;
+                        font-weight: 500;
+                        border-radius: 6px;
+                        color: white;
+                        background-color: {bg_color};
+                    ">{label} ✅</div>
+                    """,
+                    unsafe_allow_html=True
+                )
+            else:
+                # Normal nav link
+                st.markdown(
+                    f"""
+                    <a href="{filename}" target="_self" style="
+                        display: block;
+                        padding: 0.5rem 1rem;
+                        margin-bottom: 0.5rem;
+                        font-weight: 500;
+                        border-radius: 6px;
+                        color: white;
+                        background-color: {bg_color};
+                        text-decoration: none;
+                    ">{label}</a>
+                    """,
+                    unsafe_allow_html=True
+                )
         st.markdown("---")
+
+render_sidebar()
+
 st.markdown("""
 <style>
 button[kind="popover"] {
@@ -251,7 +271,6 @@ def render_token_cards_from_docs(token_list, all_docs, num_cols=5):
                     st.write("")
 
 #CALLING HELPER FUNCTIONS
-render_sidebar()
 # 1. Default Dates
 today = datetime.now().date()
 default_start = date(2024, 1, 1)
