@@ -157,6 +157,10 @@ def render_sidebar():
                 )
         st.markdown("---")
 
+        if st.button("Go to Global Snipers Page"):
+            st.switch_page("pages/global_snipers.py")
+
+
 render_sidebar()
 
 st.markdown("""
