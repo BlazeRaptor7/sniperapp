@@ -423,70 +423,70 @@ with tab1:
     tabdf["date"] = tabdf["TIME_PARSED"].dt.date
     volume_df = tabdf.groupby(["date", "TX_TYPE_RAW"])[token.upper()].sum().reset_index()
     
-eq_height = 360
+    eq_height = 360
 
-# --- ALT 1: Swap Volume Over Time (Altair Line Chart) ---
-chart = alt.Chart(volume_df).mark_line().encode(
-    x=alt.X('date:T', title='DATE'),
-    y=alt.Y(f'{token.upper()}:Q', title="SWAP VOLUME"),
-    color=alt.Color('TX_TYPE_RAW:N', title='TX TYPE'),
-    tooltip=['date:T', f'{token.upper()}:Q', 'TX_TYPE_RAW']
-).properties(title=" ", width=700, height=eq_height)
+    # --- ALT 1: Swap Volume Over Time (Altair Line Chart) ---
+    chart = alt.Chart(volume_df).mark_line().encode(
+        x=alt.X('date:T', title='DATE'),
+        y=alt.Y(f'{token.upper()}:Q', title="SWAP VOLUME"),
+        color=alt.Color('TX_TYPE_RAW:N', title='TX TYPE'),
+        tooltip=['date:T', f'{token.upper()}:Q', 'TX_TYPE_RAW']
+    ).properties(title=" ", width=700, height=eq_height)
 
-# --- Prepare Buyers & Sellers Data (clean + group) ---
-def clean_address(addr):
-    import re
-    if isinstance(addr, str):
-        addr = re.sub(r'<.*?>', '', addr)  # Strip HTML tags if present
+    # --- Prepare Buyers & Sellers Data (clean + group) ---
+    def clean_address(addr):
+        import re
+        if isinstance(addr, str):
+            addr = re.sub(r'<.*?>', '', addr)  # Strip HTML tags if present
+            return addr
         return addr
-    return addr
 
-tabdf["MAKER_CLEAN"] = tabdf["MAKER"].apply(clean_address)
+    tabdf["MAKER_CLEAN"] = tabdf["MAKER"].apply(clean_address)
 
-buyers = (
-    tabdf[tabdf["TX_TYPE_RAW"] == "buy"]
-    .groupby("MAKER_CLEAN")[token.upper()]
-    .sum()
-    .nlargest(10)
-    .reset_index()
-)
-buyers["type"] = "Buyer"
+    buyers = (
+        tabdf[tabdf["TX_TYPE_RAW"] == "buy"]
+        .groupby("MAKER_CLEAN")[token.upper()]
+        .sum()
+        .nlargest(10)
+        .reset_index()
+    )
+    buyers["type"] = "Buyer"
 
-sellers = (
-    tabdf[tabdf["TX_TYPE_RAW"] == "sell"]
-    .groupby("MAKER_CLEAN")[token.upper()]
-    .sum()
-    .nlargest(10)
-    .reset_index()
-)
-sellers["type"] = "Seller"
+    sellers = (
+        tabdf[tabdf["TX_TYPE_RAW"] == "sell"]
+        .groupby("MAKER_CLEAN")[token.upper()]
+        .sum()
+        .nlargest(10)
+        .reset_index()
+    )
+    sellers["type"] = "Seller"
 
-buyers_sellers = pd.concat([buyers, sellers])
-buyers_sellers["MAKER_SHORT"] = buyers_sellers["MAKER_CLEAN"].apply(lambda a: a[:6] + "..." + a[-4:] if isinstance(a, str) else a)
+    buyers_sellers = pd.concat([buyers, sellers])
+    buyers_sellers["MAKER_SHORT"] = buyers_sellers["MAKER_CLEAN"].apply(lambda a: a[:6] + "..." + a[-4:] if isinstance(a, str) else a)
 
-# --- ALT 2: Top 10 Buyers & Sellers (Altair Bar Chart) ---
-chart2 = alt.Chart(buyers_sellers).mark_bar().encode(
-    x=alt.X(f'{token.upper()}:Q', title="TOTAL SWAPPED"),
-    y=alt.Y('MAKER_SHORT:N', sort='-x', title='MAKER'),
-    color=alt.Color('type:N', title='TX TYPE'),
-    tooltip=['MAKER_CLEAN', f'{token.upper()}', 'type']
-).properties(title=" ", width=700, height=eq_height)
+    # --- ALT 2: Top 10 Buyers & Sellers (Altair Bar Chart) ---
+    chart2 = alt.Chart(buyers_sellers).mark_bar().encode(
+        x=alt.X(f'{token.upper()}:Q', title="TOTAL SWAPPED"),
+        y=alt.Y('MAKER_SHORT:N', sort='-x', title='MAKER'),
+        color=alt.Color('type:N', title='TX TYPE'),
+        tooltip=['MAKER_CLEAN', f'{token.upper()}', 'type']
+    ).properties(title=" ", width=700, height=eq_height)
 
-# --- Render Everything ---
-with st.container():
-    st.markdown(scrollable_style, unsafe_allow_html=True)
-    st.markdown(f"<div class='scrollable'>{html_table}</div>", unsafe_allow_html=True)
-    st.title("")
+    # --- Render Everything ---
+    with st.container():
+        st.markdown(scrollable_style, unsafe_allow_html=True)
+        st.markdown(f"<div class='scrollable'>{html_table}</div>", unsafe_allow_html=True)
+        st.title("")
 
-    chcol1, chcol2 = st.columns(2)
+        chcol1, chcol2 = st.columns(2)
 
-    with chcol1:
-        st.subheader("SWAP VOLUME OVER TIME")
-        st.altair_chart(chart, use_container_width=True)
+        with chcol1:
+            st.subheader("SWAP VOLUME OVER TIME")
+            st.altair_chart(chart, use_container_width=True)
 
-    with chcol2:
-        st.subheader("TOP BUYERS AND SELLERS")
-        st.altair_chart(chart2, use_container_width=True)
+        with chcol2:
+            st.subheader("TOP BUYERS AND SELLERS")
+            st.altair_chart(chart2, use_container_width=True)
 
 with tab2:
 
