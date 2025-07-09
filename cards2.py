@@ -107,7 +107,7 @@ html, body {
 }
 </style>
 """, unsafe_allow_html=True)
-
+#trigger rebuild
 # ───── Sidebar ─────
 def render_sidebar():
     with st.sidebar:
