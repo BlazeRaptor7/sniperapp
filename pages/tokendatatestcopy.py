@@ -815,7 +815,7 @@ with tab2:
     num_snipers = len(filtered_df)
 
     if num_snipers == 1:
-        st.info("Only one sniper detected — skipping bar chart.")
+        st.info("\nOnly one sniper detected")
     elif 2 <= num_snipers <= 5:
         st.subheader('Top Snipers by Total Net PnL')
         top = filtered_df.copy()
