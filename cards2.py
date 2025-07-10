@@ -109,21 +109,28 @@ html, body {
 """, unsafe_allow_html=True)
 #trigger rebuild
 # ───── Sidebar ─────
+import streamlit as st
+import os
+
 def render_sidebar():
     with st.sidebar:
         st.markdown("---")
-        current_script = os.path.basename(__file__).lower()
 
+        # Define clean route paths (not filenames)
         routes = [
-            ("🏠 Home", "cards2.py"),
-            ("🌍 Global Sniper Analysis", "global_snipers.py")
+            ("🏠 Home", "/"),
+            ("🌍 Global Sniper Analysis", "/global_snipers")
         ]
 
-        for label, filename in routes:
-            is_active = filename.lower() == current_script
+        # Detect current path
+        current_path = st.query_params.get("page", [""])[0]
+        if current_path == "":
+            current_path = "/"  # fallback to home if no query param
+
+        for label, path in routes:
+            is_active = path == current_path
             bg_color = "rgba(227,250,255,0.2)" if is_active else "rgba(42,42,42,0.4)"
             if is_active:
-                # Render as a disabled "highlighted" block
                 st.markdown(
                     f"""
                     <div style="
@@ -139,10 +146,9 @@ def render_sidebar():
                     unsafe_allow_html=True
                 )
             else:
-                # Normal nav link
                 st.markdown(
                     f"""
-                    <a href="{filename}" target="_self" style="
+                    <a href="{path}" target="_self" style="
                         display: block;
                         padding: 0.5rem 1rem;
                         margin-bottom: 0.5rem;
@@ -156,10 +162,6 @@ def render_sidebar():
                     unsafe_allow_html=True
                 )
         st.markdown("---")
-
-        if st.button("Go to Global Snipers Page"):
-            st.switch_page("pages/global_snipers.py")
-
 
 render_sidebar()
 

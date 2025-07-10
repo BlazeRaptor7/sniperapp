@@ -48,7 +48,7 @@ st.markdown("""
     .glass-kpi {
         background: rgba(255, 255, 255, 0.12);
         border-radius: 12px;
-        padding: 1rem;
+        padding: 17px;
         backdrop-filter: blur(10px);
         -webkit-backdrop-filter: blur(10px);
         border: 1px solid rgba(255, 255, 255, 0.25);
@@ -57,15 +57,15 @@ st.markdown("""
         text-align: center;
     }
     .glass-kpi h4 {
-        font-size: 14px;
-        font-weight: 600;
+        font-size: 12px;
+        font-weight: 400;
         text-align: center;
         margin-bottom: 0; line-height: 1;
         text-transform: uppercase;
         color: #ffffffcc;
     }
     .glass-kpi p {
-        font-size: 35px;
+        font-size: 25px;
         font-weight: bold;
         text-align: center;
         margin: 0; line-height: 1;
@@ -78,21 +78,29 @@ st.markdown("""
     }
     </style>
 """, unsafe_allow_html=True)
-
-# ───── Sidebar ─────
 def render_sidebar():
     with st.sidebar:
         st.markdown("---")
-        current_script = os.path.basename(__file__).lower()
 
+        # Define clean route paths (not filenames)
         routes = [
-            ("🏠 Home", "/", "cards2.py"),
-            ("🪙 Token Details", "/🪙 Token Details", "tokendatatestcopy.py"),
-            ("🌍 Global Sniper Analysis", "/🌍 Global Sniper Analysis", "global_snipers.py")
+            ("🏠 Home", "/"),
+            ("🪙 Token Details", "/tokendatatestcopy.py"),
+            ("🌍 Global Sniper Analysis", "/global_snipers")
         ]
 
-        for label, href, script_name in routes:
-            is_active = script_name.lower() == current_script
+        # Detect current path
+        current_script = os.path.basename(__file__).lower()
+        # Map script filenames to clean paths
+        script_to_path = {
+            "cards2.py": "/",
+            "tokendatatestcopy.py": "/tokendatatestcopy.py",
+            "global_snipers.py": "/global_snipers"
+        }
+        current_path = script_to_path.get(current_script, "/")
+
+        for label, path in routes:
+            is_active = path == current_path
             bg_color = "rgba(227,250,255,0.2)" if is_active else "rgba(42,42,42,0.4)"
             if is_active:
                 st.markdown(
@@ -112,7 +120,7 @@ def render_sidebar():
             else:
                 st.markdown(
                     f"""
-                    <a href="{href}" target="_self" style="
+                    <a href="{path}" target="_self" style="
                         display: block;
                         padding: 0.5rem 1rem;
                         margin-bottom: 0.5rem;
@@ -421,7 +429,8 @@ with tab1:
     html_table = filtered_df.to_html(escape=False, index=False, float_format="%.8f")
     
     tabdf["date"] = tabdf["TIME_PARSED"].dt.date
-    volume_df = tabdf.groupby(["date", "TX_TYPE_RAW"])[token.upper()].sum().reset_index()
+    volume_df = tabdf.groupby("date")[token.upper()].sum().reset_index()
+
     
     eq_height = 360
 
@@ -429,9 +438,9 @@ with tab1:
     chart = alt.Chart(volume_df).mark_line().encode(
         x=alt.X('date:T', title='DATE'),
         y=alt.Y(f'{token.upper()}:Q', title="SWAP VOLUME"),
-        color=alt.Color('TX_TYPE_RAW:N', title='TX TYPE'),
-        tooltip=['date:T', f'{token.upper()}:Q', 'TX_TYPE_RAW']
+        tooltip=['date:T', f'{token.upper()}:Q']
     ).properties(title=" ", width=700, height=eq_height)
+
 
     # --- Prepare Buyers & Sellers Data (clean + group) ---
     def clean_address(addr):
@@ -465,28 +474,36 @@ with tab1:
     buyers_sellers["MAKER_SHORT"] = buyers_sellers["MAKER_CLEAN"].apply(lambda a: a[:6] + "..." + a[-4:] if isinstance(a, str) else a)
 
     # --- ALT 2: Top 10 Buyers & Sellers (Altair Bar Chart) ---
-    chart2 = alt.Chart(buyers_sellers).mark_bar().encode(
+    chart2 = alt.Chart(buyers_sellers[buyers_sellers["type"] == "Buyer"]).mark_bar().encode(
         x=alt.X(f'{token.upper()}:Q', title="TOTAL SWAPPED"),
         y=alt.Y('MAKER_SHORT:N', sort='-x', title='MAKER'),
-        color=alt.Color('type:N', title='TX TYPE'),
+        color=alt.value("#54c9ff"),  # Green for buyers
         tooltip=['MAKER_CLEAN', f'{token.upper()}', 'type']
-    ).properties(title=" ", width=700, height=eq_height)
+    ).properties(width=700, height=eq_height)
+
+    chart3 = alt.Chart(buyers_sellers[buyers_sellers["type"] == "Seller"]).mark_bar().encode(
+        x=alt.X(f'{token.upper()}:Q', title="TOTAL SWAPPED"),
+        y=alt.Y('MAKER_SHORT:N', sort='-x', title='MAKER'),
+        color=alt.value("#0084ff"),  # Red for sellers
+        tooltip=['MAKER_CLEAN', f'{token.upper()}', 'type']
+    ).properties(width=700, height=eq_height)
 
     # --- Render Everything ---
     with st.container():
         st.markdown(scrollable_style, unsafe_allow_html=True)
         st.markdown(f"<div class='scrollable'>{html_table}</div>", unsafe_allow_html=True)
         st.title("")
-
+        st.subheader("SWAP VOLUME OVER TIME")
+        st.altair_chart(chart, use_container_width=True)
         chcol1, chcol2 = st.columns(2)
 
         with chcol1:
-            st.subheader("SWAP VOLUME OVER TIME")
-            st.altair_chart(chart, use_container_width=True)
+            st.subheader("TOP BUYERS")
+            st.altair_chart(chart2, use_container_width=True)
 
         with chcol2:
-            st.subheader("TOP BUYERS AND SELLERS")
-            st.altair_chart(chart2, use_container_width=True)
+            st.subheader("TOP SELLERS")
+            st.altair_chart(chart3, use_container_width=True)
 
 with tab2:
 
@@ -767,87 +784,207 @@ with tab2:
     total_tokens_held = filtered_df['Remaining Tokens'].sum()
     total_supply = 1_000_000_000  # adjust if needed
     tokens_held_percentage = (total_tokens_held / total_supply) * 100 if total_supply > 0 else 0
+    with st.container():
+        kpicol1, kpicol2 = st.columns([3,5])
+        with kpicol1:      
+            st.subheader('SNIPER KPIs')
+            st.write("")
+            kpi1, kpi2, kpi5= st.columns(3)
+            with kpi1:
+                st.markdown(f"""
+                    <div class="glass-kpi">
+                        <h4>Total Unique Snipers</h4>
+                        <p>{num_unique_snipers}</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    st.subheader('Sniper KPIs')
-    kpi1, kpi2, kpi3, kpi4, kpi5 = st.columns(5)
+            with kpi2:
+                st.markdown(f"""
+                    <div class="glass-kpi">
+                        <h4>Success Rate of Trades (%)</h4>
+                        <p>{success_rate:.2f}%</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    with kpi1:
-        st.markdown(f"""
-            <div class="glass-kpi">
-                <h4>Total Unique Snipers</h4>
-                <p>{num_unique_snipers}</p>
-            </div>
-        """, unsafe_allow_html=True)
+            with kpi5:
+                st.markdown(f"""
+                    <div class="glass-kpi">
+                        <h4>      Total Tokens Held by Snipers (%)</h4>
+                        <p>{tokens_held_percentage:.4f}%</p>
+                    </div>
+                """, unsafe_allow_html=True)
 
-    with kpi2:
-        st.markdown(f"""
-            <div class="glass-kpi">
-                <h4>Success Rate of Trades (%)</h4>
-                <p>{success_rate:.2f}%</p>
-            </div>
-        """, unsafe_allow_html=True)
+            st.write("")
+            kpi3, kpi4 = st.columns(2)
+            with kpi3:
+                st.markdown(f"""
+                    <div class="glass-kpi">
+                        <h4>Total Realized PnL</h4>
+                        <p>${total_realized_pnl:,.2f}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+            with kpi4:
+                st.markdown(f"""
+                    <div class="glass-kpi">
+                        <h4>Total Unrealized PnL</h4>
+                        <p>${total_unrealized_pnl:,.2f}</p>
+                    </div>
+                """, unsafe_allow_html=True)
+        with kpicol2:
+            # Top 5 Traders by Net PnL
+            num_snipers = len(filtered_df)
 
-    with kpi3:
-        st.markdown(f"""
-            <div class="glass-kpi">
-                <h4>Total Realized PnL</h4>
-                <p>${total_realized_pnl:,.2f}</p>
-            </div>
-        """, unsafe_allow_html=True)
+            if num_snipers == 1:
+                st.info("\nOnly one sniper detected")
+            elif 2 <= num_snipers <= 5:
+                st.subheader('Top Snipers by Total Net PnL')
+                top = filtered_df.copy()
+            elif num_snipers > 5:
+                st.subheader('Top 5 Snipers by Total Net PnL')
+                top = filtered_df.nlargest(5, 'Net PnL ($)')
 
-    with kpi4:
-        st.markdown(f"""
-            <div class="glass-kpi">
-                <h4>Total Unrealized PnL</h4>
-                <p>${total_unrealized_pnl:,.2f}</p>
-            </div>
-        """, unsafe_allow_html=True)
+            if num_snipers >= 2:
+                st.markdown("""
+                    <style>
+                    .glass-chart {
+                        padding: 1rem;
+                        margin: 1rem 0;
+                        background: rgba(255, 255, 255, 0.12);
+                        border-radius: 12px;
+                        backdrop-filter: blur(10px);
+                        -webkit-backdrop-filter: blur(10px);
+                        border: 1px solid rgba(255, 255, 255, 0.25);
+                        box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
+                    }
+                    </style>
+                """, unsafe_allow_html=True)
 
-    with kpi5:
-        st.markdown(f"""
-            <div class="glass-kpi">
-                <h4>      Total Tokens Held by Snipers (%)</h4>
-                <p>{tokens_held_percentage:.4f}%</p>
-            </div>
-        """, unsafe_allow_html=True)
+                bar_chart = alt.Chart(top).mark_bar().encode(
+                    y=alt.Y('Wallet Address:N', title='Wallet Address', sort=top['Wallet Address'].tolist()),
+                    x=alt.X('Net PnL ($):Q', title='Net PnL ($)'),color=alt.value("#00aeff"),
+                    tooltip=['Wallet Address', 'Net PnL ($)']
+                ).properties(
+                    width=600,
+                    height=225
+                )
+                st.altair_chart(bar_chart, use_container_width=True)
+    # --- Top 50 Traders by Net PnL ---
+    # ───── PnL for All Participants ─────
+    def calculate_pnl_all(df):
+        results = []
+        wallet_pairs = df[["maker", "token_name"]].drop_duplicates()
+        for _, row in wallet_pairs.iterrows():
+            maker = row["maker"]
+            token = row["token_name"]
+            user_df = df[(df["maker"] == maker) & (df["token_name"] == token)].sort_values(by="timestamp")
+            trades = defaultdict(list)
 
-    # Top 5 Traders by Net PnL
-    num_snipers = len(filtered_df)
+            # Dynamic fields
+            out_before_tax = f"{token}_OUT_BeforeTax"
+            out_after_tax = f"{token}_OUT_AfterTax"
+            in_before_tax = f"{token}_IN_BeforeTax"
+            in_after_tax = f"{token}_IN_AfterTax"
 
-    if num_snipers == 1:
-        st.info("\nOnly one sniper detected")
-    elif 2 <= num_snipers <= 5:
-        st.subheader('Top Snipers by Total Net PnL')
-        top = filtered_df.copy()
-    elif num_snipers > 5:
-        st.subheader('Top 5 Snipers by Total Net PnL')
-        top = filtered_df.nlargest(5, 'Net PnL ($)')
+            buy_txn_count = (user_df["swapType"] == "buy").sum()
+            sell_txn_count = (user_df["swapType"] == "sell").sum()
+            first_buy_time = user_df.loc[user_df["swapType"] == "buy", "timestampReadable"].min()
+            last_sell_time = user_df.loc[user_df["swapType"] == "sell", "timestampReadable"].max()
+            avg_buy_price = user_df.loc[user_df["swapType"] == "buy", "genesis_usdc_price"].mean()
+            avg_sell_price = user_df.loc[user_df["swapType"] == "sell", "genesis_usdc_price"].mean()
+            total_tax_paid = user_df["Tax_1pct"].sum()
+            total_tx_fees = user_df["transactionFee"].sum()
 
-    if num_snipers >= 2:
-        st.markdown("""
-            <style>
-            .glass-chart {
-                padding: 1rem;
-                margin: 1rem 0;
-                background: rgba(255, 255, 255, 0.12);
-                border-radius: 12px;
-                backdrop-filter: blur(10px);
-                -webkit-backdrop-filter: blur(10px);
-                border: 1px solid rgba(255, 255, 255, 0.25);
-                box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12);
-            }
-            </style>
-        """, unsafe_allow_html=True)
+            for _, tx in user_df.iterrows():
+                prefix = tx["token_name"]
+                if tx["swapType"] == "buy":
+                    trades[maker].append({
+                        "type": "buy",
+                        "amount": tx.get(f"{prefix}_OUT_AfterTax", 0),
+                        "cost": tx.get(f"{prefix}_OUT_BeforeTax", 0),
+                        "price": tx["genesis_usdc_price"]
+                    })
+                elif tx["swapType"] == "sell":
+                    trades[maker].append({
+                        "type": "sell",
+                        "amount": tx.get(f"{prefix}_IN_AfterTax", 0),
+                        "from_wallet": tx.get(f"{prefix}_IN_BeforeTax", 0),
+                        "price": tx["genesis_usdc_price"]
+                    })
 
-        bar_chart = alt.Chart(top).mark_bar().encode(
-            y=alt.Y('Wallet Address:N', title='Wallet Address', sort=top['Wallet Address'].tolist()),
-            x=alt.X('Net PnL ($):Q', title='Net PnL ($)'),
-            tooltip=['Wallet Address', 'Net PnL ($)']
-        ).properties(
-            width=600,
-            height=300
-        )
-        st.altair_chart(bar_chart, use_container_width=True)
+            buy_queue = deque()
+            realized = 0.0
+            for tx in trades[maker]:
+                if tx["type"] == "buy":
+                    buy_queue.append(tx)
+                elif tx["type"] == "sell":
+                    to_match = tx["from_wallet"]
+                    proceeds = tx["amount"] * tx["price"]
+                    while to_match > 0 and buy_queue:
+                        buy = buy_queue.popleft()
+                        match_amt = min(to_match, buy["amount"])
+                        match_cost = buy["cost"] * (match_amt / buy["amount"])
+                        realized += proceeds * (match_amt / tx["from_wallet"]) - match_cost * buy["price"]
+                        to_match -= match_amt
+                        leftover = buy["amount"] - match_amt
+                        if leftover > 0:
+                            buy_queue.appendleft({
+                                "amount": leftover,
+                                "cost": buy["cost"] * (leftover / buy["amount"]),
+                                "price": buy["price"]
+                            })
+
+            remaining = sum(b["amount"] for b in buy_queue)
+            latest_price = df[df["token_name"] == token].sort_values(by="timestamp", ascending=False).head(1)["genesis_usdc_price"].values[0]
+            unrealized = remaining * latest_price
+
+            results.append({
+                "Wallet Address": maker,
+                "Net PnL ($)": round(realized, 4),
+                "Unrealized PnL ($)": round(unrealized, 4),
+                "Remaining Tokens": float(f"{remaining:.4f}"),
+                "Txn Count (BUY)": buy_txn_count,
+                "Txn Count (SELL)": sell_txn_count,
+                "First Buy Time": first_buy_time,
+                "Last Sell Time": last_sell_time,
+                "Average Buy Price ($)": round(avg_buy_price, 4),
+                "Average Sell Price ($)": round(avg_sell_price, 4),
+                "Total Tax Paid": round(total_tax_paid, 4),
+                "Total Tx Fees Paid (ETH)": round(total_tx_fees, 4)
+            })
+
+        return pd.DataFrame(results)
+    # --- Top 50 Traders by Net PnL (All Participants) ---
+    st.subheader("📊 Top 50 Traders by Net PnL (All Participants)")
+    pnl_all_df = calculate_pnl_all(combined_df)
+    pnl_all_df["Rank"] = range(1, len(pnl_all_df) + 1)
+    pnl_all_df = pnl_all_df.sort_values(by="Net PnL ($)", ascending=False).head(50)
+
+    # Format and style
+    pnl_all_df["Wallet Display"] = pnl_all_df["Wallet Address"].apply(lambda a: f"<span title='{a}'>{a[:5]}...{a[-5:]}</span>")
+    pnl_all_df["Net PnL ($)_styled"] = pnl_all_df["Net PnL ($)"].apply(
+        lambda x: f"<span style='color: {'#74fe64' if x >= 0 else 'red'}; font-weight:bold'>${x:.2f}</span>"
+    )
+
+    display_cols = [
+        "Wallet Display", "Net PnL ($)_styled", "Unrealized PnL ($)", "Remaining Tokens",
+        "Txn Count (BUY)", "Txn Count (SELL)", "First Buy Time", "Last Sell Time",
+        "Average Buy Price ($)", "Average Sell Price ($)", "Total Tax Paid", "Total Tx Fees Paid (ETH)"
+    ]
+    filtered_df = filtered_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
+    if "Rank" in filtered_df.columns:
+        filtered_df.drop(columns=["Rank"], inplace=True)
+    html_all_pnl = (
+        pnl_all_df[display_cols]
+        .rename(columns={
+            "Wallet Display": "Wallet Address",
+            "Net PnL ($)_styled": "Net PnL ($)"
+        })
+        .to_html(escape=False, index=False, float_format="%.4f")
+    )
+
+    st.markdown(f"<div class='scrollable'>{html_all_pnl}</div>", unsafe_allow_html=True)
+
+
 
 
 with tab3:
