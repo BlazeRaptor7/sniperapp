@@ -430,6 +430,71 @@ with tab1:
     
     tabdf["date"] = tabdf["TIME_PARSED"].dt.date
     volume_df = tabdf.groupby("date")[token.upper()].sum().reset_index()
+    # --- KPI METRICS ---
+    with st.container():
+        
+        col1, col2, col3= st.columns([1,2,2])
+
+        with col1:
+            
+            if "MAKER_CLEAN" not in tabdf.columns:
+                import re
+                tabdf["MAKER_CLEAN"] = tabdf["MAKER"].apply(lambda addr: re.sub(r'<.*?>', '', addr) if isinstance(addr, str) else addr)
+            unique_makers = tabdf["MAKER_CLEAN"].nunique()
+            
+            sell_volume_usd = (
+                tabdf[tabdf["TX_TYPE_RAW"] == "sell"][token.upper()] *
+                tabdf[tabdf["TX_TYPE_RAW"] == "sell"]["GENESIS \nPRICE ($)"]
+            ).sum()
+            
+            buy_volume_usd = (
+                tabdf[tabdf["TX_TYPE_RAW"] == "buy"][token.upper()] *
+                tabdf[tabdf["TX_TYPE_RAW"] == "buy"]["GENESIS \nPRICE ($)"]
+            ).sum()
+            
+        tabdf["MAKER_CLEAN"] = tabdf["MAKER"].str.replace(r"<.*?>", "", regex=True)
+        # BUYERS: Group by address, compute total USD bought
+        buyers = (
+            tabdf[tabdf["TX_TYPE_RAW"] == "buy"]
+            .groupby("MAKER_CLEAN")
+            .apply(lambda df: (df[token.upper()] * df["GENESIS \nPRICE ($)"]).sum())
+            .nlargest(10)
+            .reset_index(name="buy_volume_usd")
+        )
+
+        # SELLERS: Group by address, compute total USD sold
+        sellers = (
+            tabdf[tabdf["TX_TYPE_RAW"] == "sell"]
+            .groupby("MAKER_CLEAN")
+            .apply(lambda df: (df[token.upper()] * df["GENESIS \nPRICE ($)"]).sum())
+            .nlargest(10)
+            .reset_index(name="sell_volume_usd")
+        )
+
+        # Shorten address for readability
+        buyers["MAKER_SHORT"] = buyers["MAKER_CLEAN"].apply(lambda a: a[:6] + "..." + a[-4:])
+        sellers["MAKER_SHORT"] = sellers["MAKER_CLEAN"].apply(lambda a: a[:6] + "..." + a[-4:])
+
+        with col2:
+            
+            chart_buyers = alt.Chart(buyers).mark_bar(color="#4fb0ff").encode(
+                x=alt.X("buy_volume_usd:Q", title="Buy Volume (USD)"),
+                y=alt.Y("MAKER_SHORT:N", sort="-x", title="Wallet"),
+                tooltip=[
+                    alt.Tooltip("MAKER_CLEAN", title="MAKER"),
+                    alt.Tooltip("buy_volume_usd", title="BUY VOLUME ($)")
+                ]
+            ).properties(title="Top 10 Buyers", height=350)
+        with col3:
+            chart_sellers = alt.Chart(sellers).mark_bar(color="#2c8bda").encode(
+                x=alt.X("sell_volume_usd:Q", title="Sell Volume (USD)"),
+                y=alt.Y("MAKER_SHORT:N", sort="-x", title="Wallet"),
+                tooltip=[
+                    alt.Tooltip("MAKER_CLEAN", title="MAKER"),
+                    alt.Tooltip("sell_volume_usd", title="SELL VOLUME ($)")
+                ]
+            ).properties(title="Top 10 Sellers", height=350)
+            
 
     
     eq_height = 360
@@ -450,60 +515,27 @@ with tab1:
             return addr
         return addr
 
-    tabdf["MAKER_CLEAN"] = tabdf["MAKER"].apply(clean_address)
-
-    buyers = (
-        tabdf[tabdf["TX_TYPE_RAW"] == "buy"]
-        .groupby("MAKER_CLEAN")[token.upper()]
-        .sum()
-        .nlargest(10)
-        .reset_index()
-    )
-    buyers["type"] = "Buyer"
-
-    sellers = (
-        tabdf[tabdf["TX_TYPE_RAW"] == "sell"]
-        .groupby("MAKER_CLEAN")[token.upper()]
-        .sum()
-        .nlargest(10)
-        .reset_index()
-    )
-    sellers["type"] = "Seller"
-
-    buyers_sellers = pd.concat([buyers, sellers])
-    buyers_sellers["MAKER_SHORT"] = buyers_sellers["MAKER_CLEAN"].apply(lambda a: a[:6] + "..." + a[-4:] if isinstance(a, str) else a)
-
-    # --- ALT 2: Top 10 Buyers & Sellers (Altair Bar Chart) ---
-    chart2 = alt.Chart(buyers_sellers[buyers_sellers["type"] == "Buyer"]).mark_bar().encode(
-        x=alt.X(f'{token.upper()}:Q', title="TOTAL SWAPPED"),
-        y=alt.Y('MAKER_SHORT:N', sort='-x', title='MAKER'),
-        color=alt.value("#54c9ff"),  # Green for buyers
-        tooltip=['MAKER_CLEAN', f'{token.upper()}', 'type']
-    ).properties(width=700, height=eq_height)
-
-    chart3 = alt.Chart(buyers_sellers[buyers_sellers["type"] == "Seller"]).mark_bar().encode(
-        x=alt.X(f'{token.upper()}:Q', title="TOTAL SWAPPED"),
-        y=alt.Y('MAKER_SHORT:N', sort='-x', title='MAKER'),
-        color=alt.value("#0084ff"),  # Red for sellers
-        tooltip=['MAKER_CLEAN', f'{token.upper()}', 'type']
-    ).properties(width=700, height=eq_height)
-
     # --- Render Everything ---
     with st.container():
         st.markdown(scrollable_style, unsafe_allow_html=True)
         st.markdown(f"<div class='scrollable'>{html_table}</div>", unsafe_allow_html=True)
         st.title("")
+        col1, col2, col3 = st.columns([1,2,2])
+        with col1:
+            st.subheader("TOKEN KPIs")
+            st.markdown(f"<div class='glass-kpi'><h4>UNIQUE TRADERS</h4><p>{unique_makers}</p></div>", unsafe_allow_html=True)
+            st.write("")
+            st.markdown(f"<div class='glass-kpi'><h4>SELL VOLUME ($)</h4><p>${sell_volume_usd:,.2f}</p></div>", unsafe_allow_html=True)
+            st.write("")
+            st.markdown(f"<div class='glass-kpi'><h4>BUY VOLUME ($)</h4><p>${buy_volume_usd:,.2f}</p></div>", unsafe_allow_html=True)
+        with col2:
+            st.subheader("TOP 10 BUYERS")
+            st.altair_chart(chart_buyers, use_container_width=True)
+        with col3:
+            st.subheader("TOP 10 SELLERS")
+            st.altair_chart(chart_sellers, use_container_width=True)
         st.subheader("SWAP VOLUME OVER TIME")
         st.altair_chart(chart, use_container_width=True)
-        chcol1, chcol2 = st.columns(2)
-
-        with chcol1:
-            st.subheader("TOP BUYERS")
-            st.altair_chart(chart2, use_container_width=True)
-
-        with chcol2:
-            st.subheader("TOP SELLERS")
-            st.altair_chart(chart3, use_container_width=True)
 
 with tab2:
 
@@ -955,37 +987,69 @@ with tab2:
         return pd.DataFrame(results)
     # --- Top 50 Traders by Net PnL (All Participants) ---
     st.subheader("📊 Top 50 Traders by Net PnL (All Participants)")
-    pnl_all_df = calculate_pnl_all(combined_df)
-    pnl_all_df["Rank"] = range(1, len(pnl_all_df) + 1)
-    pnl_all_df = pnl_all_df.sort_values(by="Net PnL ($)", ascending=False).head(50)
 
-    # Format and style
-    pnl_all_df["Wallet Display"] = pnl_all_df["Wallet Address"].apply(lambda a: f"<span title='{a}'>{a[:5]}...{a[-5:]}</span>")
-    pnl_all_df["Net PnL ($)_styled"] = pnl_all_df["Net PnL ($)"].apply(
-        lambda x: f"<span style='color: {'#74fe64' if x >= 0 else 'red'}; font-weight:bold'>${x:.2f}</span>"
+    # Calculate full PnL
+    pnl_all_df = calculate_pnl_all(combined_df)
+    pnl_all_df = pnl_all_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
+    pnl_all_df["Rank"] = pnl_all_df.index + 1
+
+    # Add "Is Sniper" column
+    sniper_wallets = set(potential_sniper_df["maker"].unique())
+    pnl_all_df["Is Sniper"] = pnl_all_df["Wallet Address"].apply(
+        lambda addr: f"<span style='color:red;font-weight:bold'>Yes</span>" if addr in sniper_wallets else f"<span style='color:#74fe64;font-weight:bold'>No</span>"
     )
 
+    # Wallet shortening
+    pnl_all_df["Wallet Display"] = pnl_all_df["Wallet Address"].apply(
+        lambda a: f"<span title='{a}'>{a[:5]}...{a[-5:]}</span>"
+    )
+
+    # Style Net PnL
+    pnl_all_df["Net PnL ($)_styled"] = pnl_all_df["Net PnL ($)"].apply(
+        lambda x: f"<span style='color:{'#74fe64' if x >= 0 else 'red'}; font-weight:bold'>${x:.2f}</span>"
+    )
+
+    # Total Buys and Sells in USD
+    def get_total_usd(tx_df, maker, token, tx_type):
+        subset = tx_df[
+            (tx_df["maker"] == maker) & 
+            (tx_df["token_name"] == token) & 
+            (tx_df["swapType"] == tx_type)
+        ]
+        try:
+            field = f"{token}_OUT_AfterTax" if tx_type == "buy" else f"{token}_IN_AfterTax"
+            return (subset["genesis_usdc_price"] * subset[field]).sum()
+        except KeyError:
+            return 0.0
+
+    pnl_all_df["Total Buys (USD)"] = pnl_all_df.apply(
+        lambda row: get_total_usd(combined_df, row["Wallet Address"], token_upper, "buy"), axis=1
+    )
+    pnl_all_df["Total Sells (USD)"] = pnl_all_df.apply(
+        lambda row: get_total_usd(combined_df, row["Wallet Address"], token_upper, "sell"), axis=1
+    )
+
+
+    # Number of Trades
+    pnl_all_df["Number of Trades"] = pnl_all_df["Txn Count (BUY)"] + pnl_all_df["Txn Count (SELL)"]
+
+    # Final column order
     display_cols = [
-        "Wallet Display", "Net PnL ($)_styled", "Unrealized PnL ($)", "Remaining Tokens",
-        "Txn Count (BUY)", "Txn Count (SELL)", "First Buy Time", "Last Sell Time",
-        "Average Buy Price ($)", "Average Sell Price ($)", "Total Tax Paid", "Total Tx Fees Paid (ETH)"
+        "Rank", "Wallet Address", "Is Sniper", "Net PnL ($)_styled", "Number of Trades", "Total Buys (USD)", "Total Sells (USD)"
     ]
-    filtered_df = filtered_df.sort_values(by="Net PnL ($)", ascending=False).reset_index(drop=True)
-    if "Rank" in filtered_df.columns:
-        filtered_df.drop(columns=["Rank"], inplace=True)
+    pnl_all_df = pnl_all_df.sort_values(by="Net PnL ($)", ascending=False).head(50)
+    # Render table
     html_all_pnl = (
         pnl_all_df[display_cols]
         .rename(columns={
             "Wallet Display": "Wallet Address",
-            "Net PnL ($)_styled": "Net PnL ($)"
+            "Net PnL ($)_styled": "Net PnL"
         })
         .to_html(escape=False, index=False, float_format="%.4f")
     )
 
+
     st.markdown(f"<div class='scrollable'>{html_all_pnl}</div>", unsafe_allow_html=True)
-
-
-
 
 with tab3:
         st.header("MORE INSIGHTS INCOMING, STAY TUNED!")
