@@ -532,8 +532,7 @@ st.markdown("</div>", unsafe_allow_html=True)
 # Add gap between table and KPIs
 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
-
-st.subheader("📊 Global Sniper Metrics")
+st.subheader("📊 Sniper Metrics")
 
 col1, col2, col3 = st.columns(3)
 
@@ -542,7 +541,7 @@ with col1:
         <div class='glass-kpi'>
             <div class='kpi-inner'>
                 <h4>Total Unique Snipers</h4>
-                <p>{pnl_df['Sniper Wallet Address'].nunique()}</p>
+                <p>{filtered_df['Sniper Wallet Address'].nunique()}</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -552,7 +551,7 @@ with col2:
         <div class='glass-kpi'>
             <div class='kpi-inner'>
                 <h4>Total Realized PnL</h4>
-                <p>${pnl_df['Net PnL'].sum():,.2f}</p>
+                <p>${filtered_df['Net PnL'].sum():,.2f}</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -562,21 +561,21 @@ with col3:
         <div class='glass-kpi'>
             <div class='kpi-inner'>
                 <h4>Total Unrealized PnL</h4>
-                <p>${pnl_df['Unrealized PnL'].sum():,.2f}</p>
+                <p>${filtered_df['Unrealized PnL'].sum():,.2f}</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
 
-# Add gap between KPIs and charts
+# Add gap
 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
 # Graphs
 st.subheader("📈 Sniper & Token Activity Overview")
 graph1, graph2 = st.columns(2)
 
-# Top 10 Snipers by Net PnL
+# Top 10 Snipers by Net PnL (filtered)
 with graph1:
-    top10_snipers = pnl_df.groupby('Sniper Wallet Address')['Net PnL'].sum().nlargest(10).reset_index()
+    top10_snipers = filtered_df.groupby('Sniper Wallet Address')['Net PnL'].sum().nlargest(10).reset_index()
     chart = alt.Chart(top10_snipers).mark_bar().encode(
         x=alt.X('Net PnL:Q', title='Net PnL'),
         y=alt.Y('Sniper Wallet Address:N', sort='-x', title='Sniper Wallet Address'),
@@ -584,19 +583,19 @@ with graph1:
     ).properties(title='Top 10 Snipers by Net PnL', height=350)
     st.altair_chart(chart, use_container_width=True)
 
-# Tokens with Most Sniper Activity
+# Token Sniper Activity — only show tokens in filtered_df
 with graph2:
-    token_sniper_counts = pnl_df.groupby('Token')['Sniper Wallet Address'].nunique().sort_values(ascending=False).head(10).reset_index()
+    token_sniper_counts = filtered_df.groupby('Token')['Sniper Wallet Address'].nunique().reset_index()
     chart2 = alt.Chart(token_sniper_counts).mark_bar().encode(
         x=alt.X('Sniper Wallet Address:Q', title='Unique Snipers'),
         y=alt.Y('Token:N', sort='-x', title='Token'),
         tooltip=['Token', 'Sniper Wallet Address']
-    ).properties(title='Tokens with Most Sniper Activity', height=350)
+    ).properties(title='Token Sniper Activity', height=350)
     st.altair_chart(chart2, use_container_width=True)
 
-# Sniper Profit Distribution
+# Sniper Profit Distribution (filtered)
 st.subheader("📊 Sniper Profit Distribution")
-hist = alt.Chart(pnl_df).mark_bar().encode(
+hist = alt.Chart(filtered_df).mark_bar().encode(
     x=alt.X('Net PnL:Q', bin=alt.Bin(maxbins=30), title='Net PnL'),
     y=alt.Y('count()', title='Number of Snipers'),
     tooltip=['count()']
