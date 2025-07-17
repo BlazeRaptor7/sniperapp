@@ -124,6 +124,12 @@ st.markdown("""
         align-items: center;
         justify-content: center;
     }
+    # Wrap headers in dataframe 
+    [data-testid="stDataFrame"] th div {
+        white-space: normal !important;
+        word-wrap: break-word;
+        text-align: center;
+    }
     </style>
 """, unsafe_allow_html=True)
 
@@ -143,10 +149,7 @@ def load_swap_data():
     db = client["genesis_tokens_swap_info"]
     
     # swap_collections = [col for col in db.list_collection_names() if col.endswith('_swap')]
-    swap_collections = ['jarvis_swap', 'afath_swap', 'pilot_swap', 'tian_swap', 'vgn_swap', 'badai_swap',
-                       'bolz_swap', 'trivi_swap', 'vruff_swap', 'wbug_swap', 'aispace_swap', 'wint_swap', 
-                       'ling_swap', 'gloria_swap', 'light_swap', 'rwai_swap', 'nyko_swap', 'super_swap',
-                       'xllm2_swap', 'maneki_swap', 'whim_swap']
+    swap_collections = ['jarvis_swap', 'tian_swap', 'badai_swap', 'aispace_swap', 'wint_swap']
     combined_df = pd.DataFrame()
 
     for col_name in swap_collections:
@@ -272,8 +275,10 @@ def process_sniper_data(combined_df, token_launch_blocks):
 
     merged['time_diff'] = (merged['timestampReadable_sell'] - merged['timestampReadable_buy']).dt.total_seconds()
     quick_sells = merged[merged['time_diff'].between(0, 20 * 60)]
-
-    potential_sniper_df = df_sniper_buys[df_sniper_buys['maker'].isin(quick_sells['maker'])].copy()
+    quick_sells_pairs = set(zip(quick_sells['maker'], quick_sells['token_name']))
+    potential_sniper_df = df_sniper_buys[
+        df_sniper_buys.apply(lambda row: (row['maker'], row['token_name']) in quick_sells_pairs, axis=1)
+    ].copy()
     
     return potential_sniper_df, combined_df
 
@@ -532,6 +537,67 @@ st.markdown("</div>", unsafe_allow_html=True)
 # Add gap between table and KPIs
 st.markdown("<div style='height: 20px;'></div>", unsafe_allow_html=True)
 
+# Add gap between table and token-filtered analysis
+st.markdown("<div style='height: 30px;'></div>", unsafe_allow_html=True)
+
+
+if token_filter:
+    st.subheader("🎯 Token-wise Sniper Summary")
+
+    col1, col2, col3 = st.columns(3)
+
+    with col1:
+        token_summary = (
+            filtered_df.groupby('Token')
+            .agg({
+                'Sniper Wallet Address': pd.Series.nunique,
+                'Net PnL': 'sum',
+                'Unrealized PnL': 'sum'
+            })
+            .reset_index()
+            .rename(columns={
+                'Sniper Wallet Address': 'Unique Snipers',
+                'Net PnL': 'Total Realized PnL',
+                'Unrealized PnL': 'Total Unrealized PnL'
+            })
+            .sort_values('Total Realized PnL', ascending=False)
+        )
+        st.dataframe(token_summary, use_container_width=True, hide_index=True)
+
+        st.markdown("##### Token Sniper Count (Filtered)")
+        token_counts = (
+            filtered_df.groupby('Token')['Sniper Wallet Address']
+            .nunique().reset_index()
+        )
+        chart_counts = alt.Chart(token_counts).mark_bar().encode(
+            x=alt.X('Token:N', sort='-y'),
+            y=alt.Y('Sniper Wallet Address:Q', title='Unique Snipers'),
+            tooltip=['Token', 'Sniper Wallet Address']
+        ).properties(height=250)
+        st.altair_chart(chart_counts, use_container_width=True)
+
+    with col2:
+        st.markdown("##### Top 10 Snipers by Net PnL (Filtered)")
+        top10_snipers = (
+            filtered_df.groupby('Sniper Wallet Address')['Net PnL']
+            .sum().nlargest(10).reset_index()
+        )
+        chart_top10 = alt.Chart(top10_snipers).mark_bar().encode(
+            x=alt.X('Sniper Wallet Address:N', sort='-y'),
+            y=alt.Y('Net PnL:Q'),
+            tooltip=['Sniper Wallet Address', 'Net PnL']
+        ).properties(height=350)
+        st.altair_chart(chart_top10, use_container_width=True)
+
+    with col3:
+        st.markdown("##### Sniper PnL Distribution (Filtered)")
+        chart_pnl_dist = alt.Chart(filtered_df).mark_bar().encode(
+            x=alt.X('Net PnL:Q', bin=alt.Bin(maxbins=30)),
+            y=alt.Y('count():Q'),
+            tooltip=['count()']
+        ).properties(height=350)
+        st.altair_chart(chart_pnl_dist, use_container_width=True)
+
 st.subheader("📊 Sniper Metrics")
 
 col1, col2, col3 = st.columns(3)
@@ -541,7 +607,7 @@ with col1:
         <div class='glass-kpi'>
             <div class='kpi-inner'>
                 <h4>Total Unique Snipers</h4>
-                <p>{filtered_df['Sniper Wallet Address'].nunique()}</p>
+                <p>{pnl_df['Sniper Wallet Address'].nunique()}</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -551,7 +617,7 @@ with col2:
         <div class='glass-kpi'>
             <div class='kpi-inner'>
                 <h4>Total Realized PnL</h4>
-                <p>${filtered_df['Net PnL'].sum():,.2f}</p>
+                <p>${pnl_df['Net PnL'].sum():,.2f}</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -561,7 +627,7 @@ with col3:
         <div class='glass-kpi'>
             <div class='kpi-inner'>
                 <h4>Total Unrealized PnL</h4>
-                <p>${filtered_df['Unrealized PnL'].sum():,.2f}</p>
+                <p>${pnl_df['Unrealized PnL'].sum():,.2f}</p>
             </div>
         </div>
     """, unsafe_allow_html=True)
@@ -575,7 +641,7 @@ graph1, graph2 = st.columns(2)
 
 # Top 10 Snipers by Net PnL (filtered)
 with graph1:
-    top10_snipers = filtered_df.groupby('Sniper Wallet Address')['Net PnL'].sum().nlargest(10).reset_index()
+    top10_snipers = pnl_df.groupby('Sniper Wallet Address')['Net PnL'].sum().nlargest(10).reset_index()
     chart = alt.Chart(top10_snipers).mark_bar().encode(
         x=alt.X('Net PnL:Q', title='Net PnL'),
         y=alt.Y('Sniper Wallet Address:N', sort='-x', title='Sniper Wallet Address'),
@@ -585,7 +651,7 @@ with graph1:
 
 # Token Sniper Activity — only show tokens in filtered_df
 with graph2:
-    token_sniper_counts = filtered_df.groupby('Token')['Sniper Wallet Address'].nunique().reset_index()
+    token_sniper_counts = pnl_df.groupby('Token')['Sniper Wallet Address'].nunique().reset_index()
     chart2 = alt.Chart(token_sniper_counts).mark_bar().encode(
         x=alt.X('Sniper Wallet Address:Q', title='Unique Snipers'),
         y=alt.Y('Token:N', sort='-x', title='Token'),
@@ -595,7 +661,7 @@ with graph2:
 
 # Sniper Profit Distribution (filtered)
 st.subheader("📊 Sniper Profit Distribution")
-hist = alt.Chart(filtered_df).mark_bar().encode(
+hist = alt.Chart(pnl_df).mark_bar().encode(
     x=alt.X('Net PnL:Q', bin=alt.Bin(maxbins=30), title='Net PnL'),
     y=alt.Y('count()', title='Number of Snipers'),
     tooltip=['count()']

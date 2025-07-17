@@ -213,13 +213,7 @@ def shorten(addr):
 # Fetch all docs once
 all_docs = list(db["swap_progress"].find({}))
 # Correct filtering from swap_progress using token_collection
-token_collection = [
-    'jarvis_swap', 'afath_swap', 'pilot_swap', 'tian_swap', 'vgn_swap', 'badai_swap',
-    'bolz_swap', 'trivi_swap', 'vruff_swap', 'wbug_swap', 'aispace_swap', 'wint_swap', 
-    'ling_swap', 'gloria_swap', 'light_swap', 'rwai_swap', 'nyko_swap', 'super_swap',
-    'xllm2_swap', 'maneki_swap', 'whim_swap'
-]
-
+token_collection = ['jarvis_swap', 'tian_swap', 'badai_swap', 'aispace_swap', 'wint_swap']
 # Normalize to lowercase for matching
 allowed_symbols = {col.replace("_swap", "").lower() for col in token_collection}
 
